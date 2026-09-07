@@ -31,6 +31,10 @@ function AdminMain() {
   }
 
   const renderCurrentView = () => {
+    if (activeView.startsWith('business')) {
+      return <BusinessView />;
+    }
+
     switch (activeView) {
       case 'dashboard':
         return <DashboardView />;
@@ -51,11 +55,6 @@ function AdminMain() {
       case 'about-story':
       case 'about-iso':
         return <AboutView />;
-      case 'business':
-      case 'business-epc':
-      case 'business-ibt':
-      case 'business-enr':
-        return <BusinessView />;
       case 'products-services':
       case 'products':
       case 'services':

@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export const Sidebar = () => {
-  const { activeView, setActiveView, logout, currentUser } = useAdmin();
+  const { activeView, setActiveView, logout, currentUser, currentContent } = useAdmin();
 
   // Accordion state for expandable menu groups (all collapsed by default)
   const [expanded, setExpanded] = useState({
@@ -187,25 +187,29 @@ export const Sidebar = () => {
               </button>
               {expanded.business && (
                 <div className="pl-6 pr-2 py-1 space-y-0.5 border-l border-slate-700/60 ml-5 my-1">
-                  {[
-                    { id: 'business-epc', label: 'EPC DIVISION' },
-                    { id: 'business-ibt', label: 'IBT DIVISION' },
-                    { id: 'business-enr', label: 'ENR DIVISION' }
-                  ].map((div) => (
-                    <button
-                      key={div.id}
-                      type="button"
-                      onClick={() => setActiveView(div.id)}
-                      className={`w-full text-left py-1.5 px-2 rounded-lg text-xs transition-all truncate block ${
-                        activeView === div.id
-                          ? 'text-gis-orange font-semibold bg-[#14213D] shadow-inner'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-[#1A2B4C]/40'
-                      }`}
-                      title={div.label}
-                    >
-                      • {div.label}
-                    </button>
-                  ))}
+                  {Object.entries(currentContent?.businessData?.divisions || {
+                    epc: { name: 'EPC DIVISION' },
+                    ibt: { name: 'IBT DIVISION' },
+                    enr: { name: 'ENR DIVISION' }
+                  }).map(([divKey, divData]) => {
+                    const viewId = `business-${divKey}`;
+                    const label = divData.name || divKey.toUpperCase();
+                    return (
+                      <button
+                        key={divKey}
+                        type="button"
+                        onClick={() => setActiveView(viewId)}
+                        className={`w-full text-left py-1.5 px-2 rounded-lg text-xs transition-all truncate block cursor-pointer ${
+                          activeView === viewId
+                            ? 'text-gis-orange font-semibold bg-[#14213D] shadow-inner'
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-[#1A2B4C]/40'
+                        }`}
+                        title={label}
+                      >
+                        • {label}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

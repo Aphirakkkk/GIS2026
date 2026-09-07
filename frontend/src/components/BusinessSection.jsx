@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { initialBusinessData } from '../data/businessDivisionsData';
-import { Play, X, ExternalLink, CheckCircle2, Share2, Clock } from 'lucide-react';
+import { Play, X, ExternalLink, CheckCircle2, Share2, Clock, Wrench, Zap, ShieldCheck, Factory, Cpu, Flame, Layers } from 'lucide-react';
 
 // -------------------------------------------------------------
 // High-Precision SVG Icons matching reference screenshots 1:1
@@ -10,18 +10,15 @@ import { Play, X, ExternalLink, CheckCircle2, Share2, Clock } from 'lucide-react
 // 1. EPC DIVISION: Safety Helmet (Hard Hat)
 const EpcHelmetIcon = ({ className = "w-7 h-7 sm:w-8 sm:h-8" }) => (
   <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    {/* Hard Hat Dome */}
     <path 
       d="M12 25C12 17.8 17.4 12 24 12C30.6 12 36 17.8 36 25" 
       stroke="currentColor" 
       strokeWidth="2.8" 
       strokeLinecap="round" 
     />
-    {/* Top Reinforcing Ridges */}
     <path d="M24 12V23" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
     <path d="M19 14.5V24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     <path d="M29 14.5V24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    {/* Helmet Brim */}
     <path 
       d="M8 28.5C8 27 9.5 26 11 26H37C38.5 26 40 27 40 28.5C40 29.5 39 30.5 37.5 30.5H10.5C9 30.5 8 29.5 8 28.5Z" 
       fill="currentColor" 
@@ -29,7 +26,6 @@ const EpcHelmetIcon = ({ className = "w-7 h-7 sm:w-8 sm:h-8" }) => (
       strokeWidth="1.5" 
       strokeLinejoin="round" 
     />
-    {/* Base Line / Strap */}
     <path d="M17 33.5H31" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
   </svg>
 );
@@ -37,7 +33,6 @@ const EpcHelmetIcon = ({ className = "w-7 h-7 sm:w-8 sm:h-8" }) => (
 // 2. IBT DIVISION: Intelligent Building + Monitor + Smartphone
 const IbtBuildingDevicesIcon = ({ className = "w-7 h-7 sm:w-8 sm:h-8" }) => (
   <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    {/* Center Intelligent Building */}
     <rect x="18" y="11" width="12" height="24" rx="1.5" stroke="currentColor" strokeWidth="2.2" />
     <line x1="22" y1="16" x2="22" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     <line x1="26" y1="16" x2="26" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -45,10 +40,8 @@ const IbtBuildingDevicesIcon = ({ className = "w-7 h-7 sm:w-8 sm:h-8" }) => (
     <line x1="26" y1="21" x2="26" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     <line x1="22" y1="26" x2="22" y2="28" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     <line x1="26" y1="26" x2="26" y2="28" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    {/* Left Monitor */}
     <rect x="8" y="21" width="9" height="8" rx="1" stroke="currentColor" strokeWidth="1.8" />
     <path d="M12.5 29V33M10 33H15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    {/* Right Smartphone */}
     <rect x="31" y="19" width="8" height="15" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
     <circle cx="35" cy="31" r="0.75" fill="currentColor" />
   </svg>
@@ -57,7 +50,6 @@ const IbtBuildingDevicesIcon = ({ className = "w-7 h-7 sm:w-8 sm:h-8" }) => (
 // 3. ENR DIVISION: Speedometer / Energy Gauge with kWh
 const EnrEnergyGaugeIcon = ({ className = "w-7 h-7 sm:w-8 sm:h-8" }) => (
   <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    {/* Speedometer / Gauge Arc */}
     <path 
       d="M13 28A13 13 0 1 1 35 28" 
       stroke="currentColor" 
@@ -65,11 +57,8 @@ const EnrEnergyGaugeIcon = ({ className = "w-7 h-7 sm:w-8 sm:h-8" }) => (
       strokeDasharray="2.5 3" 
       strokeLinecap="round" 
     />
-    {/* Needle pointing up-right */}
     <line x1="24" y1="25" x2="31" y2="17" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-    {/* Center Pivot */}
     <circle cx="24" cy="25" r="2.5" fill="currentColor" />
-    {/* kWh text */}
     <text 
       x="24" 
       y="35" 
@@ -85,6 +74,39 @@ const EnrEnergyGaugeIcon = ({ className = "w-7 h-7 sm:w-8 sm:h-8" }) => (
     </text>
   </svg>
 );
+
+// Helper to render icon for any division dynamically
+const renderDivisionIcon = (iconName, divKey) => {
+  const key = (iconName || divKey || '').toLowerCase();
+  if (key.includes('epc') || key.includes('helmet') || key.includes('hardhat')) {
+    return <EpcHelmetIcon />;
+  }
+  if (key.includes('ibt') || key.includes('building') || key.includes('monitor')) {
+    return <IbtBuildingDevicesIcon />;
+  }
+  if (key.includes('enr') || key.includes('energy') || key.includes('gauge')) {
+    return <EnrEnergyGaugeIcon />;
+  }
+  if (key.includes('wrench') || key.includes('service') || key.includes('maintenance')) {
+    return <Wrench className="w-6 h-6 text-white" />;
+  }
+  if (key.includes('zap') || key.includes('electric') || key.includes('power')) {
+    return <Zap className="w-6 h-6 text-white" />;
+  }
+  if (key.includes('shield') || key.includes('safety')) {
+    return <ShieldCheck className="w-6 h-6 text-white" />;
+  }
+  if (key.includes('factory') || key.includes('plant')) {
+    return <Factory className="w-6 h-6 text-white" />;
+  }
+  if (key.includes('cpu') || key.includes('auto') || key.includes('bms')) {
+    return <Cpu className="w-6 h-6 text-white" />;
+  }
+  if (key.includes('flame') || key.includes('fire')) {
+    return <Flame className="w-6 h-6 text-white" />;
+  }
+  return <Layers className="w-6 h-6 text-white" />;
+};
 
 export const BusinessSection = () => {
   const { lang } = useLanguage();
@@ -112,7 +134,9 @@ export const BusinessSection = () => {
     }
   }, [lang]);
 
-  const currentDiv = businessData.divisions?.[activeDivision] || initialBusinessData.divisions.epc;
+  const divisionEntries = Object.entries(businessData.divisions || initialBusinessData.divisions || {});
+  const currentKey = businessData.divisions?.[activeDivision] ? activeDivision : (divisionEntries[0]?.[0] || 'epc');
+  const currentDiv = businessData.divisions?.[currentKey] || initialBusinessData.divisions.epc;
 
   // Extract YouTube ID if URL provided
   const videoUrl = businessData.video?.url || initialBusinessData.video.url;
@@ -126,23 +150,16 @@ export const BusinessSection = () => {
       {/* 1. TOP HEADER WITH CEILING DUCTWORK BACKGROUND & DASHED LINES */}
       {/* ------------------------------------------------------------- */}
       <div className="relative py-14 sm:py-18 lg:py-20 bg-[#F4F6F9] overflow-hidden border-b border-orange-200/50">
-        {/* Background Image of Industrial Ductwork */}
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-70 mix-blend-multiply"
           style={{ backgroundImage: `url(${businessData.bgImage || '/images/business-bg.jpg'})` }}
         />
-        {/* White translucent overlay for readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/60 to-white/90" />
 
-        {/* Header Content */}
         <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
-          {/* Vertical dashed line from top */}
           <div className="w-[2px] h-8 sm:h-10 border-l-2 border-dashed border-[#EA580C] mx-auto mb-2" />
-
-          {/* Horizontal dashed line */}
           <div className="w-28 sm:w-36 h-[2px] border-t-2 border-dashed border-[#EA580C] mx-auto mb-3" />
 
-          {/* OUR BUSINESS Title */}
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#EA580C] uppercase tracking-wider font-display drop-shadow-sm">
             {isTh ? (businessData.sectionHeaderTh || businessData.sectionHeader || 'OUR BUSINESS') : (businessData.sectionHeader || 'OUR BUSINESS')}
           </h2>
@@ -150,23 +167,21 @@ export const BusinessSection = () => {
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* 2. MAIN ORANGE BUSINESS SECTION MATCHING SCREENSHOTS          */}
+      {/* 2. MAIN ORANGE BUSINESS SECTION (FULLY DYNAMIC & RESPONSIVE) */}
       {/* ------------------------------------------------------------- */}
       <div className="relative bg-gradient-to-r from-[#E65100] via-[#EA580C] to-[#F97316] py-14 sm:py-18 lg:py-22 text-white overflow-hidden shadow-2xl">
-        {/* Faint industrial background texture overlay */}
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-10 mix-blend-overlay pointer-events-none"
           style={{ backgroundImage: `url(${businessData.bgImage || '/images/business-bg.jpg'})` }}
         />
 
-        {/* Ambient subtle glow circles */}
         <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-white/10 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-black/20 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-[1550px] mx-auto px-4 sm:px-8 lg:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 xl:gap-16 items-center">
 
-            {/* LEFT COLUMN: Headlines, 3 Tilted Cards, Quote, Description, Read More */}
+            {/* LEFT COLUMN: Headlines, Dynamic Division Cards, Quote, Description, Read More */}
             <div className="lg:col-span-7 xl:col-span-7 space-y-6 sm:space-y-7">
               {/* Headlines */}
               <div>
@@ -178,110 +193,84 @@ export const BusinessSection = () => {
                 </p>
               </div>
 
-              {/* 3 DIVISION CARDS (EPC, IBT, ENR) - CLEAN ROUNDED RECTANGLES MATCHING REFERENCE */}
+              {/* DYNAMIC DIVISION CARDS - ADAPTS AUTOMATICALLY TO ANY NUMBER OF DIVISIONS */}
               <div 
-                className="flex items-center gap-3 sm:gap-4 md:gap-5 py-3 px-1 overflow-x-auto sm:overflow-visible select-none no-scrollbar"
+                className="flex items-center gap-2.5 sm:gap-3.5 md:gap-4 py-3 px-1 overflow-x-auto sm:flex-wrap select-none no-scrollbar"
                 style={{
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none'
                 }}
               >
-                {/* 1. EPC DIVISION CARD */}
-                <button
-                  type="button"
-                  onClick={() => setActiveDivision('epc')}
-                  className={`relative w-32 sm:w-38 md:w-42 h-28 sm:h-32 md:h-34 rounded-2xl transition-all duration-300 cursor-pointer group text-center focus:outline-none flex-shrink-0 ${
-                    activeDivision === 'epc'
-                      ? 'border-2 border-white bg-white/20 shadow-2xl shadow-orange-950/40 -translate-y-1 z-10'
-                      : 'border border-white/35 bg-white/10 hover:border-white/70 hover:bg-white/15 hover:-translate-y-0.5'
-                  }`}
-                >
-                  <div className="flex flex-col items-center justify-center h-full px-2">
-                    {/* Circle icon frame */}
-                    <div className={`w-12 h-12 sm:w-13 sm:h-13 rounded-full border flex items-center justify-center mb-2 transition-all duration-300 ${
-                      activeDivision === 'epc'
-                        ? 'border-white bg-white/25 text-white shadow-sm'
-                        : 'border-white/60 bg-white/5 text-white/90 group-hover:border-white group-hover:text-white'
-                    }`}>
-                      <EpcHelmetIcon />
-                    </div>
-                    {/* Title label */}
-                    <span className="text-[11px] sm:text-xs md:text-sm font-black tracking-wider uppercase text-white block whitespace-nowrap drop-shadow-sm">
-                      EPC DIVISION
-                    </span>
-                  </div>
-                </button>
-
-                {/* 2. IBT DIVISION CARD */}
-                <button
-                  type="button"
-                  onClick={() => setActiveDivision('ibt')}
-                  className={`relative w-32 sm:w-38 md:w-42 h-28 sm:h-32 md:h-34 rounded-2xl transition-all duration-300 cursor-pointer group text-center focus:outline-none flex-shrink-0 ${
-                    activeDivision === 'ibt'
-                      ? 'border-2 border-white bg-white/20 shadow-2xl shadow-orange-950/40 -translate-y-1 z-10'
-                      : 'border border-white/35 bg-white/10 hover:border-white/70 hover:bg-white/15 hover:-translate-y-0.5'
-                  }`}
-                >
-                  <div className="flex flex-col items-center justify-center h-full px-2">
-                    {/* Circle icon frame */}
-                    <div className={`w-12 h-12 sm:w-13 sm:h-13 rounded-full border flex items-center justify-center mb-2 transition-all duration-300 ${
-                      activeDivision === 'ibt'
-                        ? 'border-white bg-white/25 text-white shadow-sm'
-                        : 'border-white/60 bg-white/5 text-white/90 group-hover:border-white group-hover:text-white'
-                    }`}>
-                      <IbtBuildingDevicesIcon />
-                    </div>
-                    {/* Title label */}
-                    <span className="text-[11px] sm:text-xs md:text-sm font-black tracking-wider uppercase text-white block whitespace-nowrap drop-shadow-sm">
-                      IBT DIVISION
-                    </span>
-                  </div>
-                </button>
-
-                {/* 3. ENR DIVISION CARD */}
-                <button
-                  type="button"
-                  onClick={() => setActiveDivision('enr')}
-                  className={`relative w-32 sm:w-38 md:w-42 h-28 sm:h-32 md:h-34 rounded-2xl transition-all duration-300 cursor-pointer group text-center focus:outline-none flex-shrink-0 ${
-                    activeDivision === 'enr'
-                      ? 'border-2 border-white bg-white/20 shadow-2xl shadow-orange-950/40 -translate-y-1 z-10'
-                      : 'border border-white/35 bg-white/10 hover:border-white/70 hover:bg-white/15 hover:-translate-y-0.5'
-                  }`}
-                >
-                  <div className="flex flex-col items-center justify-center h-full px-2">
-                    {/* Circle icon frame */}
-                    <div className={`w-12 h-12 sm:w-13 sm:h-13 rounded-full border flex items-center justify-center mb-2 transition-all duration-300 ${
-                      activeDivision === 'enr'
-                        ? 'border-white bg-white/25 text-white shadow-sm'
-                        : 'border-white/60 bg-white/5 text-white/90 group-hover:border-white group-hover:text-white'
-                    }`}>
-                      <EnrEnergyGaugeIcon />
-                    </div>
-                    {/* Title label */}
-                    <span className="text-[11px] sm:text-xs md:text-sm font-black tracking-wider uppercase text-white block whitespace-nowrap drop-shadow-sm">
-                      ENR DIVISION
-                    </span>
-                  </div>
-                </button>
+                {divisionEntries.map(([divKey, divItem]) => {
+                  const isActive = currentKey === divKey;
+                  return (
+                    <button
+                      key={divKey}
+                      type="button"
+                      onClick={() => setActiveDivision(divKey)}
+                      className={`relative w-28 sm:w-36 md:w-40 h-26 sm:h-30 md:h-32 rounded-2xl transition-all duration-300 cursor-pointer group text-center focus:outline-none flex-shrink-0 ${
+                        isActive
+                          ? 'border-2 border-white bg-white/20 shadow-2xl shadow-orange-950/40 -translate-y-1 z-10'
+                          : 'border border-white/35 bg-white/10 hover:border-white/70 hover:bg-white/15 hover:-translate-y-0.5'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center justify-center h-full px-2">
+                        {/* Circle icon frame */}
+                        <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full border flex items-center justify-center mb-2 transition-all duration-300 ${
+                          isActive
+                            ? 'border-white bg-white/25 text-white shadow-sm'
+                            : 'border-white/60 bg-white/5 text-white/90 group-hover:border-white group-hover:text-white'
+                        }`}>
+                          {renderDivisionIcon(divItem.icon, divKey)}
+                        </div>
+                        {/* Title label */}
+                        <span className="text-[10px] sm:text-xs md:text-xs font-black tracking-wider uppercase text-white block whitespace-nowrap drop-shadow-sm truncate max-w-full">
+                          {divItem.name || divKey.toUpperCase()}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* WHITE SPEECH BUBBLE / PILL WITH QUOTE */}
               <div className="pt-2">
                 <div className="inline-flex items-center px-6 sm:px-7 py-2.5 sm:py-3 rounded-full bg-white text-[#1E293B] shadow-xl border border-white/90 transition-all duration-300">
-                  <p className="text-xs sm:text-sm lg:text-[15px] font-bold tracking-normal leading-snug">
-                    “ {isTh ? (currentDiv.quoteTh || currentDiv.quote) : (currentDiv.quoteEn || currentDiv.quote)} ”
-                  </p>
+                  <p
+                    className="text-xs sm:text-sm lg:text-[15px] font-bold tracking-normal leading-snug"
+                    dangerouslySetInnerHTML={{
+                      __html: `“ ${isTh ? (currentDiv.quoteTh || currentDiv.quote) : (currentDiv.quoteEn || currentDiv.quote)} ”`
+                    }}
+                  />
                 </div>
               </div>
 
               {/* DIVISION TITLE & DETAILED DESCRIPTION */}
               <div className="space-y-3 pt-2">
-                <h4 className="text-2xl sm:text-3xl font-black text-[#FDE047] uppercase tracking-wide drop-shadow-sm font-display">
-                  {currentDiv.name}
-                </h4>
-                <p className="text-white/95 text-xs sm:text-sm lg:text-[15px] leading-relaxed max-w-2xl font-normal drop-shadow-sm">
-                  {isTh ? (currentDiv.shortDescTh || currentDiv.shortDesc) : (currentDiv.shortDescEn || currentDiv.shortDesc)}
-                </p>
+                <h4
+                  className="text-2xl sm:text-3xl font-black text-[#FDE047] uppercase tracking-wide drop-shadow-sm font-display"
+                  dangerouslySetInnerHTML={{ __html: currentDiv.name }}
+                />
+                <div
+                  className="text-white/95 text-xs sm:text-sm lg:text-[15px] leading-relaxed max-w-2xl font-normal drop-shadow-sm"
+                  dangerouslySetInnerHTML={{
+                    __html: isTh ? (currentDiv.shortDescTh || currentDiv.shortDesc) : (currentDiv.shortDescEn || currentDiv.shortDesc)
+                  }}
+                />
+                
+                {/* Read More Link */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 text-white hover:text-amber-200 text-xs sm:text-sm font-bold underline underline-offset-4 cursor-pointer transition-colors group focus:outline-none"
+                  >
+                    <span>{isTh ? (currentDiv.btnTextTh || 'Read More') : (currentDiv.btnTextEn || 'Read More')}</span>
+                    <span className="inline-block transition-transform duration-200 group-hover:translate-x-1">&gt;</span>
+                  </button>
+                </div>
+              </div>
+            </div>
                 
                 {/* Read More Link */}
                 <div className="pt-1">

@@ -17,7 +17,13 @@ import {
   ChevronRight,
   Layers,
   Settings,
-  Info
+  Info,
+  Wrench,
+  Zap,
+  ShieldCheck,
+  Factory,
+  Cpu,
+  Flame
 } from 'lucide-react';
 
 // Custom SVG Icons matching the original reference screenshot
@@ -52,6 +58,39 @@ const EnrIcon = ({ className = "w-9 h-9" }) => (
   </svg>
 );
 
+// Dynamic icon helper for division tabs and preview
+const renderAdminIcon = (iconName, divKey, className = "w-5 h-5 text-orange-500") => {
+  const key = (iconName || divKey || '').toLowerCase();
+  if (key.includes('epc') || key.includes('helmet') || key.includes('hardhat')) {
+    return <EpcIcon className={className} />;
+  }
+  if (key.includes('ibt') || key.includes('building') || key.includes('monitor')) {
+    return <IbtIcon className={className} />;
+  }
+  if (key.includes('enr') || key.includes('energy') || key.includes('gauge')) {
+    return <EnrIcon className={className} />;
+  }
+  if (key.includes('wrench') || key.includes('service') || key.includes('maintenance')) {
+    return <Wrench className={className} />;
+  }
+  if (key.includes('zap') || key.includes('electric') || key.includes('power')) {
+    return <Zap className={className} />;
+  }
+  if (key.includes('shield') || key.includes('safety')) {
+    return <ShieldCheck className={className} />;
+  }
+  if (key.includes('factory') || key.includes('plant')) {
+    return <Factory className={className} />;
+  }
+  if (key.includes('cpu') || key.includes('auto') || key.includes('bms')) {
+    return <Cpu className={className} />;
+  }
+  if (key.includes('flame') || key.includes('fire')) {
+    return <Flame className={className} />;
+  }
+  return <Layers className={className} />;
+};
+
 export const BusinessView = () => {
   const { currentContent, updateSection, lang, setIsPreviewOpen, activeView } = useAdmin();
 
@@ -60,7 +99,7 @@ export const BusinessView = () => {
     return currentContent?.businessData || initialBusinessData;
   });
 
-  // Active division tab: 'epc' | 'ibt' | 'enr' | 'general'
+  // Active division tab
   const [activeTab, setActiveTab] = useState('epc');
 
   // Preview video player mode: 'mockup' or 'iframe'
@@ -68,10 +107,13 @@ export const BusinessView = () => {
 
   // Sync activeTab when sidebar sub-menu is clicked
   useEffect(() => {
-    if (activeView === 'business-epc') setActiveTab('epc');
-    else if (activeView === 'business-ibt') setActiveTab('ibt');
-    else if (activeView === 'business-enr') setActiveTab('enr');
-  }, [activeView]);
+    if (activeView.startsWith('business-')) {
+      const targetDivKey = activeView.replace('business-', '');
+      if (formData.divisions?.[targetDivKey]) {
+        setActiveTab(targetDivKey);
+      }
+    }
+  }, [activeView, formData.divisions]);
 
   // Keep local state in sync when global lang changes
   useEffect(() => {
@@ -80,7 +122,7 @@ export const BusinessView = () => {
     }
   }, [currentContent, lang]);
 
-  // Helper to update root properties (sectionHeader, headline, subheadline, bgImage)
+  // Helper to update root properties
   const updateGeneralField = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -111,6 +153,55 @@ export const BusinessView = () => {
         }
       }
     }));
+  };
+
+  // Add new division
+  const handleAddDivision = () => {
+    const newId = `div_${Date.now().toString().slice(-4)}`;
+    const newDiv = {
+      id: newId,
+      name: "NEW DIVISION",
+      fullName: "New Engineering Division (ชื่อเต็มสายงานใหม่)",
+      quote: "Committed to engineering excellence and future innovation",
+      slogan: "Engineering Technology Specialist & High-Standard Solutions",
+      shortDesc: "สายงานวิศวกรรมใหม่ ให้บริการด้านการออกแบบ จัดซื้อ และติดตั้งระบบวิศวกรรมมาตรฐานสากล...",
+      btnText: "Read More",
+      icon: "Layers",
+      image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=1200&auto=format&fit=crop",
+      capabilities: [
+        "การออกแบบและติดตั้งระบบวิศวกรรมตามมาตรฐานสากล",
+        "การบริหารจัดการโครงการและตรวจสอบความปลอดภัย",
+        "บริการให้คำปรึกษาและซ่อมบำรุงรักษาเชิงป้องกัน 24/7"
+      ]
+    };
+    setFormData(prev => ({
+      ...prev,
+      divisions: {
+        ...prev.divisions,
+        [newId]: newDiv
+      }
+    }));
+    setActiveTab(newId);
+  };
+
+  // Delete a division
+  const handleDeleteDivision = (divKey) => {
+    const keys = Object.keys(formData.divisions || {});
+    if (keys.length <= 1) {
+      alert('ไม่สามารถลบสายงานได้ เนื่องจากต้องมีอย่างน้อย 1 สายงาน');
+      return;
+    }
+    const divName = formData.divisions[divKey]?.name || divKey;
+    if (window.confirm(`คุณต้องการลบสายงาน "${divName}" ใช่หรือไม่?`)) {
+      const updated = { ...formData.divisions };
+      delete updated[divKey];
+      setFormData(prev => ({
+        ...prev,
+        divisions: updated
+      }));
+      const remaining = Object.keys(updated);
+      setActiveTab(remaining[0] || 'general');
+    }
   };
 
   // Manage capabilities list of the active division
@@ -149,8 +240,10 @@ export const BusinessView = () => {
     return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1` : null;
   };
 
-  // Current active division object
-  const currentDiv = formData.divisions[activeTab === 'general' ? 'epc' : activeTab] || formData.divisions.epc;
+  // Safe current active division
+  const divisionKeys = Object.keys(formData.divisions || {});
+  const currentKey = formData.divisions?.[activeTab] ? activeTab : (divisionKeys[0] || 'epc');
+  const currentDiv = formData.divisions?.[currentKey] || initialBusinessData.divisions.epc;
 
   return (
     <div className="space-y-8 pb-16">
@@ -160,15 +253,23 @@ export const BusinessView = () => {
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold text-slate-800">กลุ่มธุรกิจองค์กร (Our Business)</h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-200">
-              3 สายงานหลัก: EPC | IBT | ENR
+              {divisionKeys.length} สายงานในระบบ
             </span>
           </div>
           <p className="text-xs md:text-sm text-slate-500 mt-1">
-            ปรับแต่งข้อมูลสายงานวิศวกรรม หัวข้อส่วน แบนเนอร์สีส้ม และวิดีโอแนะนำ Fujitsu Trust Award
+            ปรับแต่งข้อมูลสายงานวิศวกรรม เพิ่มสายงานใหม่ จัดการข้อความ และวิดีโอแนะนำองค์กร
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            type="button"
+            onClick={handleAddDivision}
+            className="px-3.5 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ เพิ่มสายงานใหม่</span>
+          </button>
           <button
             type="button"
             onClick={handleSave}
@@ -232,81 +333,52 @@ export const BusinessView = () => {
                 </p>
               </div>
 
-              {/* 3 Angled Division Buttons (EPC, IBT, ENR) */}
+              {/* Dynamic Division Buttons in Live Preview */}
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap pt-1">
-                {/* 1. EPC DIVISION */}
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('epc')}
-                  className={`group relative flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border-2 transition-all transform hover:-translate-y-0.5 min-w-[95px] sm:min-w-[115px] ${
-                    activeTab === 'epc'
-                      ? 'bg-gradient-to-b from-orange-600/90 to-orange-700/95 border-white text-white shadow-xl ring-2 ring-white/60'
-                      : 'bg-orange-600/30 hover:bg-orange-600/50 border-white/60 text-white/90'
-                  }`}
-                >
-                  <div className="w-10 h-10 rounded-full border border-white/40 flex items-center justify-center mb-1.5 bg-white/10 group-hover:bg-white/20 transition-colors">
-                    <EpcIcon className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-[10px] sm:text-xs font-extrabold tracking-wider uppercase text-center leading-tight">
-                    {formData.divisions.epc.name}
-                  </span>
-                </button>
-
-                {/* 2. IBT DIVISION */}
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('ibt')}
-                  className={`group relative flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border-2 transition-all transform hover:-translate-y-0.5 min-w-[95px] sm:min-w-[115px] ${
-                    activeTab === 'ibt'
-                      ? 'bg-gradient-to-b from-orange-600/90 to-orange-700/95 border-white text-white shadow-xl ring-2 ring-white/60'
-                      : 'bg-orange-600/30 hover:bg-orange-600/50 border-white/60 text-white/90'
-                  }`}
-                >
-                  <div className="w-10 h-10 rounded-full border border-white/40 flex items-center justify-center mb-1.5 bg-white/10 group-hover:bg-white/20 transition-colors">
-                    <IbtIcon className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-[10px] sm:text-xs font-extrabold tracking-wider uppercase text-center leading-tight">
-                    {formData.divisions.ibt.name}
-                  </span>
-                </button>
-
-                {/* 3. ENR DIVISION */}
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('enr')}
-                  className={`group relative flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border-2 transition-all transform hover:-translate-y-0.5 min-w-[95px] sm:min-w-[115px] ${
-                    activeTab === 'enr'
-                      ? 'bg-gradient-to-b from-orange-600/90 to-orange-700/95 border-white text-white shadow-xl ring-2 ring-white/60'
-                      : 'bg-orange-600/30 hover:bg-orange-600/50 border-white/60 text-white/90'
-                  }`}
-                >
-                  <div className="w-10 h-10 rounded-full border border-white/40 flex items-center justify-center mb-1.5 bg-white/10 group-hover:bg-white/20 transition-colors">
-                    <EnrIcon className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-[10px] sm:text-xs font-extrabold tracking-wider uppercase text-center leading-tight">
-                    {formData.divisions.enr.name}
-                  </span>
-                </button>
+                {Object.entries(formData.divisions || {}).map(([divKey, divItem]) => {
+                  const isActive = currentKey === divKey;
+                  return (
+                    <button
+                      key={divKey}
+                      type="button"
+                      onClick={() => setActiveTab(divKey)}
+                      className={`group relative flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border-2 transition-all transform hover:-translate-y-0.5 min-w-[95px] sm:min-w-[115px] cursor-pointer ${
+                        isActive
+                          ? 'bg-gradient-to-b from-orange-600/90 to-orange-700/95 border-white text-white shadow-xl ring-2 ring-white/60'
+                          : 'bg-orange-600/30 hover:bg-orange-600/50 border-white/60 text-white/90'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-full border border-white/40 flex items-center justify-center mb-1.5 bg-white/10 group-hover:bg-white/20 transition-colors">
+                        {renderAdminIcon(divItem.icon, divKey)}
+                      </div>
+                      <span className="text-[10px] sm:text-xs font-extrabold tracking-wider uppercase text-center leading-tight">
+                        {divItem.name || divKey.toUpperCase()}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Speech Bubble Quote */}
               <div className="relative inline-block bg-white text-slate-800 px-4 py-2 rounded-xl shadow-md text-xs sm:text-sm font-semibold border border-orange-200/60 mt-1">
                 <span className="text-[#EA580C] font-black mr-1">&ldquo;</span>
-                <span>{currentDiv.quote || currentDiv.slogan}</span>
+                <span dangerouslySetInnerHTML={{ __html: currentDiv.quote || currentDiv.slogan || '' }} />
                 <span className="text-[#EA580C] font-black ml-1">&rdquo;</span>
               </div>
 
               {/* Division Title & Description */}
               <div className="space-y-2 pt-1">
-                <h4 className="text-xl sm:text-2xl font-black text-amber-200 tracking-wide uppercase">
-                  {currentDiv.name}
-                </h4>
-                <p className="text-xs sm:text-sm text-white/95 leading-relaxed font-light line-clamp-4">
-                  {currentDiv.shortDesc}
-                </p>
+                <h4
+                  className="text-xl sm:text-2xl font-black text-amber-200 tracking-wide uppercase"
+                  dangerouslySetInnerHTML={{ __html: currentDiv.name || '' }}
+                />
+                <div
+                  className="text-xs sm:text-sm text-white/95 leading-relaxed font-light line-clamp-4"
+                  dangerouslySetInnerHTML={{ __html: currentDiv.shortDesc || '' }}
+                />
                 <div className="pt-1">
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-200 underline underline-offset-4 hover:text-white cursor-pointer transition-colors">
-                    {currentDiv.btnText || 'Read More'}
+                    <span>{currentDiv.btnText || 'Read More'}</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
@@ -383,55 +455,45 @@ export const BusinessView = () => {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
         {/* Editor Tabs Navigation */}
         <div className="flex items-center border-b border-slate-200 overflow-x-auto bg-slate-50/70 p-2 gap-2">
-          {/* Tab: EPC DIVISION */}
+          {Object.entries(formData.divisions || {}).map(([key, div]) => {
+            const isActive = activeTab === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setActiveTab(key)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                  isActive
+                    ? 'bg-white text-orange-600 shadow-sm border border-slate-200 ring-1 ring-orange-200'
+                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
+                }`}
+              >
+                {renderAdminIcon(div.icon, key, "w-4 h-4 text-orange-500")}
+                <span>{div.name || key.toUpperCase()}</span>
+              </button>
+            );
+          })}
+
+          {/* Tab: Add New Division Button */}
           <button
             type="button"
-            onClick={() => setActiveTab('epc')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-              activeTab === 'epc'
-                ? 'bg-white text-orange-600 shadow-sm border border-slate-200'
-                : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
-            }`}
+            onClick={handleAddDivision}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-orange-700 bg-orange-100/70 hover:bg-orange-200 transition-all shrink-0 border border-orange-300/60 shadow-xs cursor-pointer"
+            title="เพิ่มสายงานธุรกิจใหม่"
           >
-            <EpcIcon className="w-4 h-4 text-orange-500" />
-            <span>EPC DIVISION</span>
+            <Plus className="w-4 h-4" />
+            <span>+ เพิ่มสายงานใหม่</span>
           </button>
 
-          {/* Tab: IBT DIVISION */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('ibt')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-              activeTab === 'ibt'
-                ? 'bg-white text-orange-600 shadow-sm border border-slate-200'
-                : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
-            }`}
-          >
-            <IbtIcon className="w-4 h-4 text-orange-500" />
-            <span>IBT DIVISION</span>
-          </button>
-
-          {/* Tab: ENR DIVISION */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('enr')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-              activeTab === 'enr'
-                ? 'bg-white text-orange-600 shadow-sm border border-slate-200'
-                : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
-            }`}
-          >
-            <EnrIcon className="w-4 h-4 text-orange-500" />
-            <span>ENR DIVISION</span>
-          </button>
+          <div className="h-5 w-px bg-slate-300 mx-1 shrink-0" />
 
           {/* Tab: General & Video Settings */}
           <button
             type="button"
             onClick={() => setActiveTab('general')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               activeTab === 'general'
-                ? 'bg-white text-blue-600 shadow-sm border border-slate-200'
+                ? 'bg-white text-blue-600 shadow-sm border border-slate-200 ring-1 ring-blue-200'
                 : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
             }`}
           >
@@ -563,17 +625,15 @@ export const BusinessView = () => {
                 recommendation="ขนาดแนะนำ: 1920 x 800 px (ภาพท่อแอร์ดักท์หรือระบบโรงงานแบบซึมใต้แสงสีส้ม)"
               />
             </div>
-          ) : (
+          ) : formData.divisions && formData.divisions[activeTab] ? (
             /* ============================================================ */
-            /* 2. DIVISION SPECIFIC EDITOR (EPC, IBT, ENR)                  */
+            /* 2. DIVISION SPECIFIC EDITOR (DYNAMIC)                        */
             /* ============================================================ */
             <div className="space-y-6">
-              <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+              <div className="border-b border-slate-100 pb-3 flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
-                    {activeTab === 'epc' && <EpcIcon className="w-5 h-5" />}
-                    {activeTab === 'ibt' && <IbtIcon className="w-5 h-5" />}
-                    {activeTab === 'enr' && <EnrIcon className="w-5 h-5" />}
+                  <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 border border-orange-200/60 shadow-xs">
+                    {renderAdminIcon(formData.divisions[activeTab].icon, activeTab, "w-5 h-5 text-orange-600")}
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-800">
@@ -585,9 +645,22 @@ export const BusinessView = () => {
                   </div>
                 </div>
 
-                <span className="text-xs font-mono font-bold bg-orange-50 text-orange-700 px-2.5 py-1 rounded-lg border border-orange-200">
-                  ID: {activeTab.toUpperCase()}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono font-bold bg-orange-50 text-orange-700 px-2.5 py-1 rounded-lg border border-orange-200">
+                    ID: {activeTab.toUpperCase()}
+                  </span>
+                  {Object.keys(formData.divisions || {}).length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteDivision(activeTab)}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-lg transition-colors border border-red-200 cursor-pointer shadow-xs"
+                      title="ลบสายงานนี้ออกจากระบบ"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>ลบสายงานนี้</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Basic Fields */}
@@ -609,6 +682,37 @@ export const BusinessView = () => {
                     value={formData.divisions[activeTab].fullName || ''}
                     onChange={(e) => updateDivisionField(activeTab, 'fullName', e.target.value)}
                     className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 outline-none font-medium text-slate-800"
+                  />
+                </div>
+
+                {/* Icon Selector Dropdown */}
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-700">ไอคอนประจำสายงาน (Division Icon)</label>
+                  <select
+                    value={formData.divisions[activeTab].icon || activeTab}
+                    onChange={(e) => updateDivisionField(activeTab, 'icon', e.target.value)}
+                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 outline-none font-medium text-slate-800 cursor-pointer"
+                  >
+                    <option value="epc">หมวกนิรภัยวิศวกร (EPC Helmet)</option>
+                    <option value="ibt">ตึกอาคาร & สมาร์ทดีไวซ์ (IBT Building & Devices)</option>
+                    <option value="enr">เกจวัดพลังงานไฟฟ้า (ENR Energy Gauge)</option>
+                    <option value="wrench">ประแจช่าง & ซ่อมบำรุง (Wrench / Maintenance)</option>
+                    <option value="zap">พลังงานไฟฟ้าแรงสูง (Zap / High Voltage)</option>
+                    <option value="shield">มาตรฐานความปลอดภัย (Shield / Safety)</option>
+                    <option value="factory">โรงงานอุตสาหกรรม (Factory / Industrial)</option>
+                    <option value="cpu">ระบบไอที & ดาต้าเซ็นเตอร์ (CPU / Tech)</option>
+                    <option value="flame">ความร้อน & ระบบดับเพลิง (Flame / Fire)</option>
+                    <option value="layers">โครงสร้าง & สถาปัตยกรรม (Layers / Structure)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-700">ข้อความปุ่มกดลิงก์ (Button Text)</label>
+                  <input
+                    type="text"
+                    value={formData.divisions[activeTab].btnText || 'Read More'}
+                    onChange={(e) => updateDivisionField(activeTab, 'btnText', e.target.value)}
+                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 outline-none font-semibold text-blue-600"
                   />
                 </div>
 
@@ -642,16 +746,6 @@ export const BusinessView = () => {
                     rows={4}
                   />
                 </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">ข้อความปุ่มกดลิงก์ (Button Text)</label>
-                  <input
-                    type="text"
-                    value={formData.divisions[activeTab].btnText || 'Read More'}
-                    onChange={(e) => updateDivisionField(activeTab, 'btnText', e.target.value)}
-                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 outline-none font-semibold text-blue-600"
-                  />
-                </div>
               </div>
 
               {/* Division Banner Image */}
@@ -676,7 +770,7 @@ export const BusinessView = () => {
                   <button
                     type="button"
                     onClick={() => handleAddCapability(activeTab)}
-                    className="text-xs text-orange-600 hover:text-orange-700 font-semibold flex items-center gap-1 px-2.5 py-1 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                    className="text-xs text-orange-600 hover:text-orange-700 font-semibold flex items-center gap-1 px-2.5 py-1 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     เพิ่มความเชี่ยวชาญ
@@ -698,7 +792,7 @@ export const BusinessView = () => {
                       <button
                         type="button"
                         onClick={() => handleDeleteCapability(activeTab, idx)}
-                        className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer"
                         title="ลบรายการนี้"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -707,6 +801,10 @@ export const BusinessView = () => {
                   ))}
                 </div>
               </div>
+            </div>
+          ) : (
+            <div className="p-12 text-center text-slate-400">
+              <p className="text-sm font-medium">กรุณาเลือกสายงานธุรกิจจากแท็บด้านบนเพื่อแก้ไขข้อมูล</p>
             </div>
           )}
         </div>

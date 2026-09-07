@@ -28,6 +28,10 @@ export const Topbar = () => {
 
   // Format view name for breadcrumb
   const getViewName = () => {
+    if (activeView.startsWith('business-')) {
+      return `Our Business / ${activeView.replace('business-', '').toUpperCase()}`;
+    }
+
     switch (activeView) {
       case 'dashboard': return 'Dashboard';
       case 'banner': return 'จัดการแบนเนอร์ (Banner)';
@@ -44,9 +48,6 @@ export const Topbar = () => {
       case 'about-policy': return 'About / Policy';
       case 'about-carbon': return 'About / Carbon Footprint';
       case 'business': return 'Our Business (กลุ่มธุรกิจ)';
-      case 'business-epc': return 'Our Business / EPC DIVISION';
-      case 'business-ibt': return 'Our Business / IBT DIVISION';
-      case 'business-enr': return 'Our Business / ENR DIVISION';
       case 'products-services': return 'Products & Services';
       case 'products': return 'Products & Services / Products';
       case 'services': return 'Products & Services / Services';

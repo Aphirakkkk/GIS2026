@@ -44,3 +44,11 @@
 .table-cell {
   @apply py-3.5 px-4 text-sm text-slate-700 border-b border-slate-100 transition-colors;
 }
+
+/* RichTextEditor ContentEditable Placeholder */
+[contenteditable]:empty:before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+  display: block;
+}

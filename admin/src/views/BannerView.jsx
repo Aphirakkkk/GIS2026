@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
 import { ImageUploadField } from '../components/common/ImageUploadField';
+import { RichTextEditor } from '../components/common/RichTextEditor';
 import { Save, Plus, Trash2, CheckCircle2, Eye, Sliders, Layers } from 'lucide-react';
 
 export const BannerView = () => {
@@ -65,7 +66,7 @@ export const BannerView = () => {
             </span>
           </div>
           <p className="text-xs md:text-sm text-slate-500 mt-1">
-            ปรับเปลี่ยนข้อความพาดหัว สถิติ ปุ่มกด และรูปภาพหน้าแรกของเว็บไซต์
+            ปรับเปลี่ยนข้อความพาดหัว สถิติ ปุ่มกด และรูปภาพหน้าแรกของเว็บไซต์ พร้อมแถบเครื่องมือตกแต่งตัวหนา สี ขนาด และพิมพ์เล็ก/ใหญ่
           </p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -88,7 +89,7 @@ export const BannerView = () => {
         </div>
       </div>
 
-      {/* SECTION 1: ข้อความ Hero Banner หลัก */}
+      {/* SECTION 1: ข้อความ Hero Banner หลัก (รองรับ RichTextEditor ตกแต่งตัวหนา สี ขนาด ฟอนต์) */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
         <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
           <Sliders className="w-5 h-5 text-blue-600" />
@@ -97,52 +98,61 @@ export const BannerView = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700">ข้อความแท็กด้านบน (Tagline)</label>
-            <input
-              type="text"
+            <RichTextEditor
+              label="ข้อความแท็กด้านบน (Tagline)"
               value={heroData.tagline || ''}
-              onChange={(e) => handleHeroChange('tagline', e.target.value)}
-              className="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono"
+              onChange={(val) => handleHeroChange('tagline', val)}
+              placeholder="เช่น LEADING ENGINEERING & MEP CONTRACTOR"
+              compact={true}
+              singleLine={true}
+              minHeight="42px"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700">ชื่อปุ่มติดต่อ (Contact Button Label)</label>
-            <input
-              type="text"
+            <RichTextEditor
+              label="ชื่อปุ่มติดต่อ (Contact Button Label)"
               value={heroData.btnContact || ''}
-              onChange={(e) => handleHeroChange('btnContact', e.target.value)}
-              className="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+              onChange={(val) => handleHeroChange('btnContact', val)}
+              placeholder="เช่น CONTACT หรือ ติดต่อเรา"
+              compact={true}
+              singleLine={true}
+              minHeight="42px"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700">พาดหัวใหญ่ บรรทัดที่ 1 (Title Line 1)</label>
-            <input
-              type="text"
+            <RichTextEditor
+              label="พาดหัวใหญ่ บรรทัดที่ 1 (Title Line 1)"
               value={heroData.titleMain || ''}
-              onChange={(e) => handleHeroChange('titleMain', e.target.value)}
-              className="w-full text-base font-bold bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-900"
+              onChange={(val) => handleHeroChange('titleMain', val)}
+              placeholder="เช่น LOCAL EXPERTISE'S"
+              compact={true}
+              singleLine={true}
+              minHeight="44px"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700">พาดหัวใหญ่ บรรทัดที่ 2 (Title Line 2 - สีส้ม)</label>
-            <input
-              type="text"
+            <RichTextEditor
+              label="พาดหัวใหญ่ บรรทัดที่ 2 (Title Line 2 - สีส้ม)"
               value={heroData.titleSub || ''}
-              onChange={(e) => handleHeroChange('titleSub', e.target.value)}
-              className="w-full text-base font-bold bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-gis-orange"
+              onChange={(val) => handleHeroChange('titleSub', val)}
+              placeholder="เช่น INTERNATIONAL STANDARD"
+              compact={true}
+              singleLine={true}
+              minHeight="44px"
             />
           </div>
 
           <div className="md:col-span-2 space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700">คำบรรยายสรุป (Hero Description)</label>
-            <textarea
-              rows={3}
+            <RichTextEditor
+              label="คำบรรยายสรุป (Hero Description)"
               value={heroData.description || ''}
-              onChange={(e) => handleHeroChange('description', e.target.value)}
-              className="w-full text-sm bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-700 leading-relaxed"
+              onChange={(val) => handleHeroChange('description', val)}
+              placeholder="ผู้นำด้านวิศวกรรมระบบประกอบอาคารและอุตสาหกรรมครบวงจร..."
+              compact={true}
+              rows={3}
             />
           </div>
         </div>
@@ -240,21 +250,23 @@ export const BannerView = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600">หัวข้อแบนเนอร์</label>
-                  <input
-                    type="text"
-                    value={banner.title}
-                    onChange={(e) => handleBannerChange(banner.id, 'title', e.target.value)}
-                    className="w-full text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  <RichTextEditor
+                    label="หัวข้อแบนเนอร์"
+                    value={banner.title || ''}
+                    onChange={(val) => handleBannerChange(banner.id, 'title', val)}
+                    compact={true}
+                    singleLine={true}
+                    minHeight="38px"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600">หัวข้อย่อย / คำโปรย</label>
-                  <input
-                    type="text"
-                    value={banner.subtitle}
-                    onChange={(e) => handleBannerChange(banner.id, 'subtitle', e.target.value)}
-                    className="w-full text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  <RichTextEditor
+                    label="หัวข้อย่อย / คำโปรย"
+                    value={banner.subtitle || ''}
+                    onChange={(val) => handleBannerChange(banner.id, 'subtitle', val)}
+                    compact={true}
+                    singleLine={true}
+                    minHeight="38px"
                   />
                 </div>
               </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../context/AdminContext';
 import { initialProjectsReferenceData, projectCategories } from '../data/projectsReferenceData';
 import { ImageUploadField } from '../components/common/ImageUploadField';
+import { RichTextEditor } from '../components/common/RichTextEditor';
 import {
   Save,
   Plus,
@@ -292,7 +293,7 @@ export const ProjectsView = () => {
                       {proj.clientName && (
                         <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-[10px] font-black text-slate-800 shadow flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-                          <span>{proj.clientName}</span>
+                          <span dangerouslySetInnerHTML={{ __html: proj.clientName }} />
                         </div>
                       )}
 
@@ -301,9 +302,10 @@ export const ProjectsView = () => {
                         <span className="text-[9px] uppercase tracking-wider text-amber-300 font-bold block truncate">
                           {proj.segment}
                         </span>
-                        <h4 className="text-xs font-black truncate leading-tight">
-                          {proj.title}
-                        </h4>
+                        <h4
+                          className="text-xs font-black truncate leading-tight"
+                          dangerouslySetInnerHTML={{ __html: proj.title }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -358,9 +360,10 @@ export const ProjectsView = () => {
                   <div className="w-5 h-5 rounded-full bg-orange-500 text-white flex items-center justify-center text-[10px] font-black">
                     G
                   </div>
-                  <span className="font-black text-sm sm:text-base tracking-wider text-slate-800">
-                    {previewProject.clientName || 'CLIENT LOGO'}
-                  </span>
+                  <span
+                    className="font-black text-sm sm:text-base tracking-wider text-slate-800"
+                    dangerouslySetInnerHTML={{ __html: previewProject.clientName || 'CLIENT LOGO' }}
+                  />
                 </div>
               </div>
 
@@ -372,11 +375,12 @@ export const ProjectsView = () => {
                     <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-amber-100">
                       Segment : {previewProject.segment}
                     </div>
-                    <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-wide uppercase drop-shadow-sm font-sans">
-                      {previewProject.title}
-                    </h3>
+                    <h3
+                      className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-wide uppercase drop-shadow-sm font-sans"
+                      dangerouslySetInnerHTML={{ __html: previewProject.title }}
+                    />
                     <div className="text-[10px] sm:text-xs text-white/90 font-light truncate">
-                      Project Owner : {previewProject.owner}
+                      Project Owner : <span dangerouslySetInnerHTML={{ __html: previewProject.owner }} />
                     </div>
                   </div>
 
@@ -539,8 +543,13 @@ export const ProjectsView = () => {
               {/* Card Details */}
               <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                 <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-slate-800 line-clamp-1">{proj.title}</h4>
-                  <p className="text-xs text-slate-500 line-clamp-1">เจ้าของ: {proj.owner}</p>
+                  <h4
+                    className="text-sm font-bold text-slate-800 line-clamp-1"
+                    dangerouslySetInnerHTML={{ __html: proj.title }}
+                  />
+                  <p className="text-xs text-slate-500 line-clamp-1">
+                    เจ้าของ: <span dangerouslySetInnerHTML={{ __html: proj.owner }} />
+                  </p>
                   <div className="flex items-center gap-4 text-[11px] text-slate-600 pt-1 font-mono">
                     <span>มูลค่า: <b>{proj.projectValue}</b> ลบ.</span>
                     <span>ปี: <b>{proj.startYear} - {proj.completionYear}</b></span>
@@ -607,13 +616,14 @@ export const ProjectsView = () => {
             <div className="p-6 overflow-y-auto space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">ชื่อโครงการ (Project Name)</label>
-                  <input
-                    type="text"
+                  <RichTextEditor
+                    label="ชื่อโครงการ (Project Name)"
                     value={editingProject.title || ''}
-                    onChange={(e) => handleUpdateProjectField(editingProject.id, 'title', e.target.value)}
+                    onChange={(val) => handleUpdateProjectField(editingProject.id, 'title', val)}
                     placeholder="เช่น ENCO-PTTOR"
-                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold"
+                    compact={true}
+                    singleLine={true}
+                    minHeight="38px"
                   />
                 </div>
 
@@ -635,24 +645,26 @@ export const ProjectsView = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">เจ้าของโครงการ (Project Owner)</label>
-                  <input
-                    type="text"
+                  <RichTextEditor
+                    label="เจ้าของโครงการ (Project Owner)"
                     value={editingProject.owner || ''}
-                    onChange={(e) => handleUpdateProjectField(editingProject.id, 'owner', e.target.value)}
+                    onChange={(val) => handleUpdateProjectField(editingProject.id, 'owner', val)}
                     placeholder="เช่น ENERGY COMPLEX COMPANY LIMITED"
-                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 outline-none"
+                    compact={true}
+                    singleLine={true}
+                    minHeight="38px"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">ชื่อแบรนด์ลูกค้า / โลโก้ (Client Name)</label>
-                  <input
-                    type="text"
+                  <RichTextEditor
+                    label="ชื่อแบรนด์ลูกค้า / โลโก้ (Client Name)"
                     value={editingProject.clientName || ''}
-                    onChange={(e) => handleUpdateProjectField(editingProject.id, 'clientName', e.target.value)}
+                    onChange={(val) => handleUpdateProjectField(editingProject.id, 'clientName', val)}
                     placeholder="เช่น EnCo, Nestlé, AIS, PTT"
-                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 outline-none font-bold text-orange-600"
+                    compact={true}
+                    singleLine={true}
+                    minHeight="38px"
                   />
                 </div>
               </div>
@@ -700,13 +712,13 @@ export const ProjectsView = () => {
 
               {/* Scope of Work */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">ขอบเขตงานวิศวกรรม (Scope of Work)</label>
-                <textarea
-                  rows={3}
+                <RichTextEditor
+                  label="ขอบเขตงานวิศวกรรม (Scope of Work)"
                   value={editingProject.scope || ''}
-                  onChange={(e) => handleUpdateProjectField(editingProject.id, 'scope', e.target.value)}
+                  onChange={(val) => handleUpdateProjectField(editingProject.id, 'scope', val)}
                   placeholder="รายละเอียดงานติดตั้งและระบบวิศวกรรม..."
-                  className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 outline-none leading-relaxed"
+                  compact={true}
+                  rows={3}
                 />
               </div>
 

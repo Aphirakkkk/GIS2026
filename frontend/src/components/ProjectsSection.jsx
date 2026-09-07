@@ -84,9 +84,10 @@ export const ProjectsSection = () => {
               {/* Info */}
               <div className="p-5 flex-1 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-white mb-2 group-hover:text-gis-orange transition-colors font-display line-clamp-2">
-                    {project.title}
-                  </h3>
+                  <h3
+                    className="text-base font-bold text-white mb-2 group-hover:text-gis-orange transition-colors font-display line-clamp-2"
+                    dangerouslySetInnerHTML={{ __html: project.title }}
+                  />
                   <div className="flex items-center gap-1.5 text-xs text-gis-orange font-medium mb-3">
                     <MapPin size={13} className="shrink-0" />
                     <span className="truncate">{project.location}</span>
@@ -94,10 +95,10 @@ export const ProjectsSection = () => {
                 </div>
 
                 <div className="pt-3 border-t border-white/5">
-                  <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">
+                  <div className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">
                     <span className="text-gray-300 font-semibold">{lang === 'th' ? 'ขอบเขตงาน: ' : 'Scope: '}</span>
-                    {project.scope}
-                  </p>
+                    <span dangerouslySetInnerHTML={{ __html: project.scope }} />
+                  </div>
                 </div>
               </div>
             </div>

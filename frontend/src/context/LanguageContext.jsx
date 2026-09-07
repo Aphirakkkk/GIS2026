@@ -19,11 +19,50 @@ export const LanguageProvider = ({ children }) => {
     document.documentElement.lang = lang;
   }, [lang]);
 
+  const [adminContent, setAdminContent] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem('GIS_ADMIN_DATA_V1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.content || null;
+      }
+    } catch (e) {}
+    return null;
+  });
+
+  React.useEffect(() => {
+    const handleStorage = () => {
+      try {
+        const saved = localStorage.getItem('GIS_ADMIN_DATA_V1');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setAdminContent(parsed.content || null);
+        }
+      } catch (e) {}
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   const toggleLanguage = () => {
     setLang(prev => (prev === 'th' ? 'en' : 'th'));
   };
 
-  const t = (content && content[lang]) ? content[lang] : (content?.th || {});
+  const defaultLangContent = (content && content[lang]) ? content[lang] : (content?.th || {});
+  const activeAdminLang = adminContent ? adminContent[lang] : null;
+
+  const t = {
+    ...defaultLangContent,
+    ...(activeAdminLang || {}),
+    hero: {
+      ...defaultLangContent.hero,
+      ...(activeAdminLang?.hero || {})
+    },
+    projects: {
+      ...defaultLangContent.projects,
+      items: (activeAdminLang?.projectsReferenceData?.projects) || defaultLangContent.projects?.items || []
+    }
+  };
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, toggleLanguage, t }}>

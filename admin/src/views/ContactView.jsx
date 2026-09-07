@@ -625,35 +625,6 @@ export const ContactView = () => {
                     className="w-full h-full border-0 absolute inset-0 filter saturate-105"
                     loading="lazy"
                   />
-
-                  {/* Overlaid Live Pin Card (Top Right) */}
-                  <div className="absolute top-4 right-4 z-20 pointer-events-auto max-w-sm hidden md:block">
-                    <div className="bg-white/95 backdrop-blur-md px-4 py-3 rounded-xl shadow-xl border border-slate-200/80 flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[#F26522] flex items-center justify-center text-white shadow-md shrink-0 mt-0.5">
-                        <MapPin className="w-5 h-5 animate-bounce" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-xs text-slate-900 truncate">
-                            {currentMap.locationName || 'GIS GROUP'}
-                          </span>
-                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700">
-                            หมุดพิกัดจริง
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                          {currentMap.address}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400 font-mono">
-                          <span>Lat: {currentMap.lat?.toFixed(4)}</span>
-                          <span>•</span>
-                          <span>Lng: {currentMap.lng?.toFixed(4)}</span>
-                          <span>•</span>
-                          <span>Zoom: {currentMap.zoom || 16}x</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               ) : (
                 /* Map Background Canvas (Realistic Bangkok Riverbend Map around Rama 3) */

@@ -254,10 +254,10 @@ export const RichTextEditor = ({
           <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
             <span>{label}</span>
             {lang && (
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                lang === 'th' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+              <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider ${
+                lang === 'th' ? 'bg-orange-100 text-[#EA580C]' : 'bg-blue-100 text-blue-700'
               }`}>
-                {lang === 'th' ? '🇹🇭 TH' : '🇬🇧 EN'}
+                {lang === 'th' ? 'TH' : 'EN'}
               </span>
             )}
           </label>

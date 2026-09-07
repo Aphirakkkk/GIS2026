@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { ValuesSection } from './components/ValuesSection';
 import { BusinessSection } from './components/BusinessSection';
+import { ProductsServicesSection } from './components/ProductsServicesSection';
 import { AboutSection } from './components/AboutSection';
 import { Footer } from './components/Footer';
 
@@ -57,6 +58,9 @@ function App() {
 
             {/* OUR BUSINESS Section (EPC, IBT, ENR & Fujitsu Video) */}
             <BusinessSection />
+
+            {/* PRODUCTS & SERVICES Section (Overview Banner + Interactive Products/Services Tabs) */}
+            <ProductsServicesSection />
 
             {/* About Us & ISO Certifications */}
             <AboutSection />

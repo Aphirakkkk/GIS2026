@@ -11,10 +11,11 @@ export const initialContactFooterData = {
     },
     map: {
       address: "682/59-60 ถนนพระราม 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพฯ 10120",
-      locationName: "GIS GROUP Co., Ltd. (Headquarters)",
+      locationName: "GIS GROUP Co., Ltd. (สำนักงานใหญ่ พระราม 3)",
       lat: 13.6844,
       lng: 100.5375,
-      zoom: 15,
+      zoom: 16,
+      mapType: "m", // 'm' roadmap, 'k' satellite, 'p' terrain
       googleMapsUrl: "https://maps.google.com/?q=13.6844,100.5375"
     }
   },

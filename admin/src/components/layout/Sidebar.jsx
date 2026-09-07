@@ -23,15 +23,15 @@ import {
 export const Sidebar = () => {
   const { activeView, setActiveView, logout, currentUser } = useAdmin();
 
-  // Accordion state for expandable menu groups
+  // Accordion state for expandable menu groups (all collapsed by default)
   const [expanded, setExpanded] = useState({
-    about: true,
-    business: true,
-    productsServices: true,
-    projects: true,
-    news: true,
-    career: true,
-    contact: true,
+    about: false,
+    business: false,
+    productsServices: false,
+    projects: false,
+    news: false,
+    career: false,
+    contact: false,
     settings: false
   });
 

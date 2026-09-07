@@ -118,26 +118,29 @@ export const ContactSection = () => {
               </div>
             </div>
 
-            {/* Map Preview Card */}
-            <div className="relative rounded-2xl overflow-hidden border border-white/10 h-52 bg-[#14171E] shadow-xl group">
-              <img
-                src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=800&auto=format&fit=crop"
-                alt="Bangkok City GIS Location Map"
-                className="w-full h-full object-cover filter contrast-125 brightness-75 group-hover:scale-105 transition-transform duration-500"
+            {/* Real Interactive Map Card */}
+            <div className="relative rounded-2xl overflow-hidden border border-white/10 h-60 bg-[#14171E] shadow-xl group">
+              <iframe
+                title="GIS Group Rama 3 Map"
+                src="https://maps.google.com/maps?q=13.6844,100.5375&t=m&z=15&ie=UTF8&iwloc=&output=embed"
+                className="w-full h-full border-0 filter saturate-105"
+                loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-white text-xs font-bold">
-                  <MapPin size={16} className="text-gis-orange animate-bounce" />
-                  <span>GIS TOWER (Rama 9, Bangkok)</span>
-                </div>
+              <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 pointer-events-none">
+                <MapPin size={15} className="text-gis-orange animate-bounce" />
+                <span className="text-white text-xs font-bold">
+                  {lang === 'th' ? 'สำนักงานใหญ่ พระราม 3 (GIS GROUP)' : 'GIS GROUP Headquarters (Rama 3)'}
+                </span>
+              </div>
+              <div className="absolute bottom-3 right-3">
                 <a
-                  href="https://maps.google.com"
+                  href="https://maps.google.com/?q=13.6844,100.5375"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1 bg-gis-orange hover:bg-gis-orange-hover text-white text-xs font-bold rounded-lg transition-colors shadow"
+                  className="px-3.5 py-1.5 bg-gis-orange hover:bg-gis-orange-hover text-white text-xs font-bold rounded-lg shadow-lg flex items-center gap-1.5 transition-all hover:scale-105"
                 >
-                  {lang === 'th' ? 'เปิดแผนที่' : 'Open Map'}
+                  <span>{lang === 'th' ? 'เปิด Google Maps' : 'Open Google Maps'}</span>
+                  <span>↗</span>
                 </a>
               </div>
             </div>

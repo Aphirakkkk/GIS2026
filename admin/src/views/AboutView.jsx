@@ -652,7 +652,7 @@ export const AboutView = () => {
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <span>🇹🇭 ภาษาไทย</span>
+                <span>ภาษาไทย (TH)</span>
               </button>
               <button
                 type="button"
@@ -663,7 +663,7 @@ export const AboutView = () => {
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <span>🇬🇧 English</span>
+                <span>English (EN)</span>
               </button>
             </div>
           </div>
@@ -676,7 +676,7 @@ export const AboutView = () => {
               <div className="bg-orange-50/40 p-4 rounded-xl border border-orange-200/80 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-gis-orange flex items-center gap-1.5">
-                    <span>🇹🇭</span>
+                    <span className="px-1.5 py-0.5 rounded bg-orange-100 text-[#EA580C] text-[10px] font-black">TH</span>
                     <span>ข้อมูลภาษาไทย (Thai Content)</span>
                   </span>
                   <span className="text-[10px] text-slate-400 font-medium">THAI LANGUAGE</span>
@@ -731,7 +731,7 @@ export const AboutView = () => {
               <div className="bg-blue-50/40 p-4 rounded-xl border border-blue-200/80 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-blue-700 flex items-center gap-1.5">
-                    <span>🇬🇧</span>
+                    <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-[10px] font-black">EN</span>
                     <span>ข้อมูลภาษาอังกฤษ (English Content)</span>
                   </span>
                   <span className="text-[10px] text-slate-400 font-medium">ENGLISH LANGUAGE</span>

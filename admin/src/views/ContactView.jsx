@@ -23,8 +23,66 @@ import {
   User,
   ShieldCheck,
   ChevronRight,
-  Download
+  Download,
+  Navigation,
+  Compass,
+  Layers,
+  ZoomIn,
+  ZoomOut,
+  Copy,
+  Sliders,
+  Sparkles,
+  Map as MapIcon,
+  Crosshair
 } from 'lucide-react';
+
+const PRESET_LOCATIONS = [
+  {
+    name: 'สำนักงานใหญ่ พระราม 3',
+    locationName: 'GIS GROUP Co., Ltd. (สำนักงานใหญ่ พระราม 3)',
+    address: '682/59-60 ถนนพระราม 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพฯ 10120',
+    lat: 13.6844,
+    lng: 100.5375,
+    zoom: 16,
+    tag: 'สำนักงานใหญ่'
+  },
+  {
+    name: 'ศูนย์ปฏิบัติการ สีลมคอมเพล็กซ์',
+    locationName: 'GIS GROUP - Silom Operations Branch',
+    address: 'อาคารสีลมคอมเพล็กซ์ ถนนสีลม แขวงสีลม เขตบางรัก กรุงเทพฯ 10500',
+    lat: 13.7278,
+    lng: 100.5342,
+    zoom: 16,
+    tag: 'สาขา กทม.'
+  },
+  {
+    name: 'ศูนย์กระจายสินค้า บางนา-ตราด',
+    locationName: 'GIS GROUP - Bangna Logistics & Engineering Hub',
+    address: 'ถนนบางนา-ตราด กม. 18 ตำบลบางโฉลง อำเภอบางพลี สมุทรปราการ 10540',
+    lat: 13.6682,
+    lng: 100.6341,
+    zoom: 15,
+    tag: 'คลังสินค้า'
+  },
+  {
+    name: 'ศูนย์บริการโครงการ นิคมฯ ชลบุรี',
+    locationName: 'GIS GROUP - Chonburi Industrial Services',
+    address: 'นิคมอุตสาหกรรมอมตะซิตี้ ชลบุรี ตำบลคลองตำหรุ อำเภอเมือง ชลบุรี 20000',
+    lat: 13.3611,
+    lng: 100.9847,
+    zoom: 15,
+    tag: 'ภาคตะวันออก'
+  },
+  {
+    name: 'ศูนย์วิศวกรรมปิโตรเคมี มาบตาพุด ระยอง',
+    locationName: 'GIS GROUP - Map Ta Phut Engineering Center',
+    address: 'นิคมอุตสาหกรรมมาบตาพุด ตำบลมาบตาพุด อำเภอเมือง ระยอง 21150',
+    lat: 12.7215,
+    lng: 101.1685,
+    zoom: 15,
+    tag: 'ปิโตรเคมี'
+  }
+];
 
 export const ContactView = () => {
   const { data, updateSection, updateRootField, lang, showToast, activeView } = useAdmin();
@@ -39,6 +97,174 @@ export const ContactView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedInquiry, setSelectedInquiry] = useState(null);
+
+  // Real Map States
+  const [mapViewMode, setMapViewMode] = useState('real'); // 'real' (roadmap), 'satellite', 'vector'
+  const [mapSearchText, setMapSearchText] = useState('');
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [copiedCoords, setCopiedCoords] = useState(false);
+
+  // Current Map Data with robust fallbacks
+  const currentMap = contactData?.contactSection?.map || {
+    address: "682/59-60 ถนนพระราม 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพฯ 10120",
+    locationName: "GIS GROUP Co., Ltd. (สำนักงานใหญ่ พระราม 3)",
+    lat: 13.6844,
+    lng: 100.5375,
+    zoom: 16,
+    mapType: "m",
+    googleMapsUrl: "https://maps.google.com/?q=13.6844,100.5375"
+  };
+
+  const getMapEmbedUrl = (map, mode) => {
+    const lat = map?.lat;
+    const lng = map?.lng;
+    const addr = map?.address;
+    const zoom = map?.zoom || 16;
+    const type = mode === 'satellite' ? 'k' : 'm';
+    const query = lat && lng ? `${lat},${lng}` : addr || 'ถนนพระราม 3 บางโพงพาง';
+    return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=${type}&z=${zoom}&ie=UTF8&iwloc=&output=embed`;
+  };
+
+  const applyPresetLocation = (preset) => {
+    const updatedMap = {
+      ...currentMap,
+      locationName: preset.locationName,
+      address: preset.address,
+      lat: preset.lat,
+      lng: preset.lng,
+      zoom: preset.zoom,
+      googleMapsUrl: `https://maps.google.com/?q=${preset.lat},${preset.lng}`
+    };
+    setContactData((prev) => ({
+      ...prev,
+      contactSection: {
+        ...prev?.contactSection,
+        map: updatedMap
+      },
+      footer: {
+        ...prev?.footer,
+        address: preset.address
+      }
+    }));
+    showToast(`ปักหมุดแผนที่จริงไปยัง: ${preset.name}`);
+  };
+
+  const handleGeocodeSearch = async (e) => {
+    if (e) e.preventDefault();
+    const q = (mapSearchText || '').trim();
+    if (!q) {
+      showToast('กรุณากรอกชื่อสถานที่หรือที่อยู่เพื่อค้นหา');
+      return;
+    }
+
+    setIsSearchingLocation(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          q
+        )}&countrycodes=th&limit=1`,
+        { headers: { 'Accept-Language': 'th, en' } }
+      );
+      const resData = await res.json();
+      if (resData && resData.length > 0) {
+        const found = resData[0];
+        const newLat = parseFloat(found.lat);
+        const newLng = parseFloat(found.lon);
+        const updatedMap = {
+          ...currentMap,
+          locationName: q,
+          address: found.display_name || q,
+          lat: newLat,
+          lng: newLng,
+          zoom: 16,
+          googleMapsUrl: `https://maps.google.com/?q=${newLat},${newLng}`
+        };
+        setContactData((prev) => ({
+          ...prev,
+          contactSection: {
+            ...prev?.contactSection,
+            map: updatedMap
+          },
+          footer: {
+            ...prev?.footer,
+            address: found.display_name || q
+          }
+        }));
+        showToast(`พบพิกัดแล้ว! ปักหมุดไปที่ [${newLat.toFixed(4)}, ${newLng.toFixed(4)}]`);
+      } else {
+        const updatedMap = {
+          ...currentMap,
+          locationName: q,
+          address: q,
+          googleMapsUrl: `https://maps.google.com/?q=${encodeURIComponent(q)}`
+        };
+        setContactData((prev) => ({
+          ...prev,
+          contactSection: {
+            ...prev?.contactSection,
+            map: updatedMap
+          },
+          footer: {
+            ...prev?.footer,
+            address: q
+          }
+        }));
+        showToast(`อัปเดตที่อยู่และปักหมุดบน Google Maps: ${q}`);
+      }
+    } catch {
+      const updatedMap = {
+        ...currentMap,
+        locationName: q,
+        address: q,
+        googleMapsUrl: `https://maps.google.com/?q=${encodeURIComponent(q)}`
+      };
+      setContactData((prev) => ({
+        ...prev,
+        contactSection: {
+          ...prev?.contactSection,
+          map: updatedMap
+        },
+        footer: {
+          ...prev?.footer,
+          address: q
+        }
+      }));
+      showToast(`ค้นหาและปักหมุดด้วยชื่อ: ${q}`);
+    } finally {
+      setIsSearchingLocation(false);
+    }
+  };
+
+  const updateMapField = (field, value) => {
+    setContactData((prev) => {
+      const existingMap = prev?.contactSection?.map || currentMap;
+      const newMap = { ...existingMap, [field]: value };
+      if (field === 'lat' || field === 'lng') {
+        const lat = field === 'lat' ? parseFloat(value) || 0 : newMap.lat;
+        const lng = field === 'lng' ? parseFloat(value) || 0 : newMap.lng;
+        newMap.googleMapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+      } else if (field === 'address') {
+        return {
+          ...prev,
+          contactSection: { ...prev?.contactSection, map: newMap },
+          footer: { ...prev?.footer, address: value }
+        };
+      }
+      return {
+        ...prev,
+        contactSection: { ...prev?.contactSection, map: newMap }
+      };
+    });
+  };
+
+  const copyCoordsToClipboard = () => {
+    if (currentMap.lat && currentMap.lng) {
+      navigator.clipboard.writeText(`${currentMap.lat}, ${currentMap.lng}`);
+      setCopiedCoords(true);
+      showToast('คัดลอกพิกัด GPS เรียบร้อยแล้ว');
+      setTimeout(() => setCopiedCoords(false), 2500);
+    }
+  };
 
   // Live Interactive Preview form states
   const [previewForm, setPreviewForm] = useState({
@@ -275,150 +501,266 @@ export const ContactView = () => {
       {/* ========================================================================= */}
       {activeTab === 'preview' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+          {/* Header & Quick Action Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 px-1">
+            <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Live Interactive Preview (ถอดแบบหน้าจริงและแผนที่แม่น้ำเจ้าพระยา)
-            </h2>
-            <span className="text-xs text-slate-400">
-              * ฟอร์มนี้ใช้งานได้จริง สามารถทดลองพิมพ์ส่งเพื่อเพิ่มเข้าสู่ Inbox ได้ทันที
-            </span>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+                Live Interactive Preview (แผนที่จริง & ปักหมุดตามสถานที่จริง)
+              </h2>
+            </div>
+
+            {/* View Mode Switcher & Quick Map Link */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="inline-flex bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setMapViewMode('real')}
+                  className={`px-3 py-1 rounded-md transition-all flex items-center gap-1.5 ${
+                    mapViewMode === 'real'
+                      ? 'bg-white text-slate-900 shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <MapIcon className="w-3.5 h-3.5 text-orange-500" />
+                  <span>แผนที่ถนนจริง</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapViewMode('satellite')}
+                  className={`px-3 py-1 rounded-md transition-all flex items-center gap-1.5 ${
+                    mapViewMode === 'satellite'
+                      ? 'bg-white text-slate-900 shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 text-blue-500" />
+                  <span>ภาพดาวเทียม</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapViewMode('vector')}
+                  className={`px-3 py-1 rounded-md transition-all flex items-center gap-1.5 ${
+                    mapViewMode === 'vector'
+                      ? 'bg-white text-slate-900 shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Compass className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>ภาพสเก็ตช์เดิม</span>
+                </button>
+              </div>
+
+              <a
+                href={currentMap.googleMapsUrl || `https://maps.google.com/?q=${encodeURIComponent(currentMap.address)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-gis-orange rounded-lg shadow-xs flex items-center gap-1.5 transition-colors"
+                title="เปิด Google Maps เต็มจอ"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Google Maps เต็มจอ</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Quick Location Presets Bar */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-slate-600 font-medium shrink-0">
+              <Crosshair className="w-4 h-4 text-gis-orange" />
+              <span>ทดลองย้ายหมุดจริง:</span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              {PRESET_LOCATIONS.map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => applyPresetLocation(preset)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition-all border ${
+                    currentMap.locationName === preset.locationName || currentMap.lat === preset.lat
+                      ? 'bg-gis-orange text-white border-orange-600 shadow-xs scale-105'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-orange-300 hover:bg-orange-50/50'
+                  }`}
+                >
+                  {preset.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Full Container matching Screenshot */}
           <div className="rounded-2xl overflow-hidden shadow-2xl border border-slate-300 bg-white">
             {/* ----------------- TOP CONTACT US ON MAP SECTION ----------------- */}
-            <div className="relative min-h-[580px] w-full overflow-hidden flex flex-col justify-center">
-              {/* Map Background Canvas (Realistic Bangkok Riverbend Map around Rama 3) */}
-              <div className="absolute inset-0 z-0 bg-[#e5e3df] overflow-hidden select-none pointer-events-auto">
-                <svg
-                  viewBox="0 0 1200 650"
-                  className="w-full h-full object-cover"
-                  preserveAspectRatio="xMidYMid slice"
-                >
-                  {/* Land Background */}
-                  <rect width="1200" height="650" fill="#E8ECE9" />
-
-                  {/* Road Grid Network */}
-                  <g stroke="#FFFFFF" strokeWidth="6" opacity="0.9" fill="none">
-                    <path d="M 0,150 L 1200,150" />
-                    <path d="M 0,320 L 1200,320" />
-                    <path d="M 0,480 L 1200,480" />
-                    <path d="M 200,0 L 200,650" />
-                    <path d="M 450,0 L 450,650" />
-                    <path d="M 750,0 L 750,650" />
-                    <path d="M 980,0 L 980,650" />
-                  </g>
-
-                  {/* Minor Roads */}
-                  <g stroke="#F4F6F4" strokeWidth="2.5" opacity="0.8" fill="none">
-                    <path d="M 50,0 L 50,650" />
-                    <path d="M 350,0 L 350,650" />
-                    <path d="M 600,0 L 600,650" />
-                    <path d="M 880,0 L 880,650" />
-                    <path d="M 1100,0 L 1100,650" />
-                    <path d="M 0,80 L 1200,80" />
-                    <path d="M 0,230 L 1200,230" />
-                    <path d="M 0,400 L 1200,400" />
-                    <path d="M 0,560 L 1200,560" />
-                  </g>
-
-                  {/* Expressways (Orange Highway like in screenshot: ทางพิเศษเฉลิมมหานคร) */}
-                  <g stroke="#F6C358" strokeWidth="8" fill="none" opacity="0.95">
-                    <path d="M 120,650 Q 500,450 720,0" />
-                    <path d="M 450,650 Q 750,350 1200,200" />
-                  </g>
-                  <g stroke="#DE9B26" strokeWidth="2" fill="none" opacity="0.8">
-                    <path d="M 120,650 Q 500,450 720,0" />
-                    <path d="M 450,650 Q 750,350 1200,200" />
-                  </g>
-
-                  {/* Chao Phraya River Curve (Blue Waterway through Yannawa / Bang Kho Laem) */}
-                  <path
-                    d="M 500,0 C 480,180 820,180 880,350 C 940,520 800,650 780,650 L 950,650 C 980,500 1150,380 1200,250 L 1200,0 Z"
-                    fill="#A5C9EB"
-                    opacity="0.9"
-                  />
-                  <path
-                    d="M 400,200 C 520,200 800,250 820,400 C 840,550 700,650 680,650 L 780,650 C 800,650 940,520 880,350 C 820,180 480,180 500,0 L 400,0 Z"
-                    fill="#8EBEEC"
+            <div className="relative min-h-[620px] w-full overflow-hidden flex flex-col justify-center">
+              {/* REAL MAP / SATELLITE or VECTOR CANVAS */}
+              {mapViewMode !== 'vector' ? (
+                <div className="absolute inset-0 z-0 bg-[#e5e3df] overflow-hidden">
+                  <iframe
+                    key={`${currentMap.lat}-${currentMap.lng}-${currentMap.zoom}-${mapViewMode}-${currentMap.address}`}
+                    title="GIS Group Real Location Map"
+                    src={getMapEmbedUrl(currentMap, mapViewMode)}
+                    className="w-full h-full border-0 absolute inset-0 filter saturate-105"
+                    loading="lazy"
                   />
 
-                  {/* River Label */}
-                  <text
-                    x="560"
-                    y="215"
-                    fill="#5F88B0"
-                    fontSize="13"
-                    fontWeight="500"
-                    fontStyle="italic"
-                    transform="rotate(-15, 560, 215)"
-                  >
-                    แม่น้ำเจ้าพระยา
-                  </text>
-                  <text
-                    x="760"
-                    y="480"
-                    fill="#5F88B0"
-                    fontSize="13"
-                    fontWeight="500"
-                    fontStyle="italic"
-                    transform="rotate(60, 760, 480)"
-                  >
-                    แม่น้ำเจ้าพระยา
-                  </text>
-
-                  {/* District / Sub-district Labels in Thai (matching screenshot) */}
-                  <g fill="#7A8B99" fontSize="12" fontWeight="bold">
-                    <text x="560" y="240">เขตบางคอแหลม</text>
-                    <text x="890" y="440">แขวงบางโพงพาง</text>
-                    <text x="880" y="70">แขวงช่องนนทรี</text>
-                    <text x="830" y="140">เขตยานนาวา</text>
-                    <text x="560" y="640">เขตราษฎร์บูรณะ</text>
-                    <text x="100" y="580">แขวงบางมด</text>
-                    <text x="250" y="520">แขวงบางปะกอก</text>
-                  </g>
-
-                  {/* Landmarks Labels */}
-                  <g fill="#9AA7B2" fontSize="10">
-                    <text x="660" y="180">โฮมโปร พระราม 3</text>
-                    <text x="760" y="120">ทาวน์เฮ้าส์ อยู่สุข</text>
-                    <text x="570" y="325">หมู่บ้าน ไทยสามัคคี</text>
-                    <text x="590" y="800">Loft 17 Residence</text>
-                  </g>
-
-                  {/* Rama 3 Road Label */}
-                  <text
-                    x="840"
-                    y="420"
-                    fill="#DE9B26"
-                    fontSize="11"
-                    fontWeight="bold"
-                    transform="rotate(-25, 840, 420)"
-                  >
-                    ถ. พระรามที่ 3
-                  </text>
-                </svg>
-
-                {/* The Custom GIS GROUP Marker Pin on Rama 3 (matching screenshot) */}
-                <div 
-                  className="absolute z-20 transition-transform hover:scale-110 cursor-pointer"
-                  style={{ top: '35%', right: '27%' }}
-                  title="GIS GROUP Headquarters (พระราม 3)"
-                >
-                  <div className="flex flex-col items-center">
-                    {/* Orange GIS GROUP Label Tag */}
-                    <div className="bg-[#F26522] text-white font-black italic px-4 py-2 rounded-lg shadow-2xl flex items-center gap-1.5 border-2 border-white tracking-wider text-sm">
-                      <span className="font-sans">GIS</span>
-                      <span className="text-amber-300">GROUP</span>
+                  {/* Overlaid Live Pin Card (Top Right) */}
+                  <div className="absolute top-4 right-4 z-20 pointer-events-auto max-w-sm hidden md:block">
+                    <div className="bg-white/95 backdrop-blur-md px-4 py-3 rounded-xl shadow-xl border border-slate-200/80 flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-[#F26522] flex items-center justify-center text-white shadow-md shrink-0 mt-0.5">
+                        <MapPin className="w-5 h-5 animate-bounce" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-xs text-slate-900 truncate">
+                            {currentMap.locationName || 'GIS GROUP'}
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700">
+                            หมุดพิกัดจริง
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                          {currentMap.address}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400 font-mono">
+                          <span>Lat: {currentMap.lat?.toFixed(4)}</span>
+                          <span>•</span>
+                          <span>Lng: {currentMap.lng?.toFixed(4)}</span>
+                          <span>•</span>
+                          <span>Zoom: {currentMap.zoom || 16}x</span>
+                        </div>
+                      </div>
                     </div>
-                    {/* Pin Point Pointer */}
-                    <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[14px] border-t-[#F26522] -mt-0.5 filter drop-shadow-md"></div>
-                    {/* Pulsing Base */}
-                    <div className="w-4 h-4 rounded-full bg-orange-500/40 animate-ping -mt-1"></div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* Map Background Canvas (Realistic Bangkok Riverbend Map around Rama 3) */
+                <div className="absolute inset-0 z-0 bg-[#e5e3df] overflow-hidden select-none pointer-events-auto">
+                  <svg
+                    viewBox="0 0 1200 650"
+                    className="w-full h-full object-cover"
+                    preserveAspectRatio="xMidYMid slice"
+                  >
+                    {/* Land Background */}
+                    <rect width="1200" height="650" fill="#E8ECE9" />
+
+                    {/* Road Grid Network */}
+                    <g stroke="#FFFFFF" strokeWidth="6" opacity="0.9" fill="none">
+                      <path d="M 0,150 L 1200,150" />
+                      <path d="M 0,320 L 1200,320" />
+                      <path d="M 0,480 L 1200,480" />
+                      <path d="M 200,0 L 200,650" />
+                      <path d="M 450,0 L 450,650" />
+                      <path d="M 750,0 L 750,650" />
+                      <path d="M 980,0 L 980,650" />
+                    </g>
+
+                    {/* Minor Roads */}
+                    <g stroke="#F4F6F4" strokeWidth="2.5" opacity="0.8" fill="none">
+                      <path d="M 50,0 L 50,650" />
+                      <path d="M 350,0 L 350,650" />
+                      <path d="M 600,0 L 600,650" />
+                      <path d="M 880,0 L 880,650" />
+                      <path d="M 1100,0 L 1100,650" />
+                      <path d="M 0,80 L 1200,80" />
+                      <path d="M 0,230 L 1200,230" />
+                      <path d="M 0,400 L 1200,400" />
+                      <path d="M 0,560 L 1200,560" />
+                    </g>
+
+                    {/* Expressways (Orange Highway) */}
+                    <g stroke="#F6C358" strokeWidth="8" fill="none" opacity="0.95">
+                      <path d="M 120,650 Q 500,450 720,0" />
+                      <path d="M 450,650 Q 750,350 1200,200" />
+                    </g>
+                    <g stroke="#DE9B26" strokeWidth="2" fill="none" opacity="0.8">
+                      <path d="M 120,650 Q 500,450 720,0" />
+                      <path d="M 450,650 Q 750,350 1200,200" />
+                    </g>
+
+                    {/* Chao Phraya River Curve */}
+                    <path
+                      d="M 500,0 C 480,180 820,180 880,350 C 940,520 800,650 780,650 L 950,650 C 980,500 1150,380 1200,250 L 1200,0 Z"
+                      fill="#A5C9EB"
+                      opacity="0.9"
+                    />
+                    <path
+                      d="M 400,200 C 520,200 800,250 820,400 C 840,550 700,650 680,650 L 780,650 C 800,650 940,520 880,350 C 820,180 480,180 500,0 L 400,0 Z"
+                      fill="#8EBEEC"
+                    />
+
+                    {/* River Label */}
+                    <text
+                      x="560"
+                      y="215"
+                      fill="#5F88B0"
+                      fontSize="13"
+                      fontWeight="500"
+                      fontStyle="italic"
+                      transform="rotate(-15, 560, 215)"
+                    >
+                      แม่น้ำเจ้าพระยา
+                    </text>
+                    <text
+                      x="760"
+                      y="480"
+                      fill="#5F88B0"
+                      fontSize="13"
+                      fontWeight="500"
+                      fontStyle="italic"
+                      transform="rotate(60, 760, 480)"
+                    >
+                      แม่น้ำเจ้าพระยา
+                    </text>
+
+                    {/* District / Sub-district Labels in Thai */}
+                    <g fill="#7A8B99" fontSize="12" fontWeight="bold">
+                      <text x="560" y="240">เขตบางคอแหลม</text>
+                      <text x="890" y="440">แขวงบางโพงพาง</text>
+                      <text x="880" y="70">แขวงช่องนนทรี</text>
+                      <text x="830" y="140">เขตยานนาวา</text>
+                      <text x="560" y="640">เขตราษฎร์บูรณะ</text>
+                      <text x="100" y="580">แขวงบางมด</text>
+                      <text x="250" y="520">แขวงบางปะกอก</text>
+                    </g>
+
+                    {/* Landmarks Labels */}
+                    <g fill="#9AA7B2" fontSize="10">
+                      <text x="660" y="180">โฮมโปร พระราม 3</text>
+                      <text x="760" y="120">ทาวน์เฮ้าส์ อยู่สุข</text>
+                      <text x="570" y="325">หมู่บ้าน ไทยสามัคคี</text>
+                      <text x="590" y="800">Loft 17 Residence</text>
+                    </g>
+
+                    {/* Rama 3 Road Label */}
+                    <text
+                      x="840"
+                      y="420"
+                      fill="#DE9B26"
+                      fontSize="11"
+                      fontWeight="bold"
+                      transform="rotate(-25, 840, 420)"
+                    >
+                      ถ. พระรามที่ 3
+                    </text>
+                  </svg>
+
+                  {/* The Custom GIS GROUP Marker Pin on Rama 3 */}
+                  <div 
+                    className="absolute z-20 transition-transform hover:scale-110 cursor-pointer"
+                    style={{ top: '35%', right: '27%' }}
+                    title="GIS GROUP Headquarters (พระราม 3)"
+                  >
+                    <div className="flex flex-col items-center">
+                      <div className="bg-[#F26522] text-white font-black italic px-4 py-2 rounded-lg shadow-2xl flex items-center gap-1.5 border-2 border-white tracking-wider text-sm">
+                        <span className="font-sans">GIS</span>
+                        <span className="text-amber-300">GROUP</span>
+                      </div>
+                      <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[14px] border-t-[#F26522] -mt-0.5 filter drop-shadow-md"></div>
+                      <div className="w-4 h-4 rounded-full bg-orange-500/40 animate-ping -mt-1"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* ----------------- FLOATING CONTACT FORM (LEFT SIDE) ----------------- */}
               <div className="relative z-10 max-w-7xl mx-auto w-full px-6 py-10 pointer-events-none">
@@ -755,140 +1097,357 @@ export const ContactView = () => {
       {/* ========================================================================= */}
       {/* TAB 3: HEADQUARTERS & MAP SETTINGS */}
       {/* ========================================================================= */}
+      {/* ========================================================================= */}
+      {/* TAB 3: HEADQUARTERS & REAL MAP GIS CONTROL */}
+      {/* ========================================================================= */}
       {activeTab === 'info' && (
-        <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-6 space-y-6">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-            <Building2 className="w-5 h-5 text-gis-orange" />
-            <h2 className="text-base font-bold text-slate-900">
-              ข้อมูลที่ตั้งสำนักงานใหญ่ & พิกัดแผนที่ (Headquarters & Map)
-            </h2>
+        <div className="space-y-6">
+          {/* Top Section: Interactive Map Showcase & Live Pin Finder */}
+          <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-orange-100 text-gis-orange flex items-center justify-center">
+                  <Navigation className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <span>ศูนย์ควบคุมแผนที่จริง & ปักหมุดพิกัด (Real Map & GIS Coordinates)</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
+                      Live Dynamic Map
+                    </span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    หมุดจะขยับตามพิกัดและที่อยู่ที่ตั้งค่าไว้แบบ Real-time รองรับทั้งชื่อสถานที่ ที่อยู่ และพิกัด GPS
+                  </p>
+                </div>
+              </div>
+
+              {/* Map Mode Buttons inside Tab 3 */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateMapField('mapType', currentMap.mapType === 'k' ? 'm' : 'k')}
+                  className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition-colors"
+                >
+                  <Layers className="w-3.5 h-3.5 text-gis-orange" />
+                  <span>{currentMap.mapType === 'k' ? 'สลับเป็นแผนที่ถนน' : 'สลับเป็นภาพดาวเทียม'}</span>
+                </button>
+                <a
+                  href={currentMap.googleMapsUrl || `https://maps.google.com/?q=${encodeURIComponent(currentMap.address)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 text-xs font-semibold bg-orange-50 hover:bg-orange-100 text-gis-orange rounded-lg flex items-center gap-1.5 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>เปิด Google Maps</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Fast Location Search & Quick Presets Bar */}
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+              <form onSubmit={handleGeocodeSearch} className="flex flex-col sm:flex-row items-center gap-2.5">
+                <div className="relative flex-1 w-full">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    placeholder="พิมพ์ชื่อสถานที่ หรือที่อยู่ เพื่อค้นหาและย้ายหมุดจริง เช่น พระราม 3, อาคารสีลม, นิคมมาบตาพุด..."
+                    value={mapSearchText}
+                    onChange={(e) => setMapSearchText(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSearchingLocation}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-gis-orange hover:bg-orange-600 text-white text-xs font-bold rounded-lg shadow-sm flex items-center justify-center gap-2 shrink-0 transition-all disabled:opacity-50"
+                >
+                  {isSearchingLocation ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>กำลังค้นหา...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Crosshair className="w-3.5 h-3.5" />
+                      <span>ค้นหาและปักหมุดจริง</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Presets Chips */}
+              <div className="flex items-center gap-2 flex-wrap pt-1">
+                <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  พิกัดด่วน:
+                </span>
+                {PRESET_LOCATIONS.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => applyPresetLocation(preset)}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all border ${
+                      currentMap.locationName === preset.locationName
+                        ? 'bg-gis-orange text-white border-orange-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-orange-300 hover:bg-orange-50'
+                    }`}
+                  >
+                    {preset.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Live Interactive Map Box */}
+            <div className="relative h-96 w-full rounded-xl overflow-hidden border border-slate-300 shadow-md bg-slate-100">
+              <iframe
+                key={`tab3-${currentMap.lat}-${currentMap.lng}-${currentMap.zoom}-${currentMap.mapType}-${currentMap.address}`}
+                title="Interactive Admin Map"
+                src={getMapEmbedUrl(currentMap, currentMap.mapType === 'k' ? 'satellite' : 'real')}
+                className="w-full h-full border-0 absolute inset-0 filter saturate-105"
+                loading="lazy"
+              />
+
+              {/* Floating Map HUD */}
+              <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-lg shadow-md border border-slate-200/80 flex items-center gap-2.5">
+                <MapPin className="w-4 h-4 text-gis-orange animate-bounce" />
+                <div className="text-xs">
+                  <span className="font-bold text-slate-800">{currentMap.locationName || 'สำนักงานใหญ่'}</span>
+                  <span className="text-slate-400 font-mono ml-2">
+                    ({currentMap.lat?.toFixed(4)}, {currentMap.lng?.toFixed(4)})
+                  </span>
+                </div>
+              </div>
+
+              {/* Floating Action Controls on Map */}
+              <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={copyCoordsToClipboard}
+                  className="px-3 py-1.5 bg-white/95 backdrop-blur-md text-slate-700 hover:text-gis-orange hover:bg-white text-xs font-semibold rounded-lg shadow-md border border-slate-200 flex items-center gap-1.5 transition-all"
+                  title="คัดลอกพิกัด GPS"
+                >
+                  {copiedCoords ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedCoords ? 'คัดลอกแล้ว!' : 'คัดลอก GPS'}</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                ที่อยู่สำนักงานใหญ่ (ภาษาไทย)
-              </label>
-              <textarea
-                rows={2}
-                value={contactData.footer?.address || ''}
-                onChange={(e) =>
-                  setContactData((prev) => ({
-                    ...prev,
-                    footer: { ...prev.footer, address: e.target.value },
-                    contactSection: {
-                      ...prev.contactSection,
-                      map: { ...prev.contactSection.map, address: e.target.value }
-                    }
-                  }))
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
-              />
+          {/* Coordinates & Location Form */}
+          <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-6 space-y-5">
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+              <Building2 className="w-5 h-5 text-gis-orange" />
+              <h3 className="text-base font-bold text-slate-900">
+                ตั้งค่าพิกัด & รายละเอียดสถานที่ (Location & Pin Settings)
+              </h3>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                เบอร์โทรศัพท์ Call Center
-              </label>
-              <input
-                type="text"
-                value={contactData.footer?.callCenter || ''}
-                onChange={(e) =>
-                  setContactData((prev) => ({
-                    ...prev,
-                    footer: { ...prev.footer, callCenter: e.target.value }
-                  }))
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-bold text-gis-orange focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {/* Location Name */}
+              <div className="lg:col-span-3">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  ชื่อสถานที่สำหรับป้ายหมุด (Pin Title / Location Name)
+                </label>
+                <input
+                  type="text"
+                  value={currentMap.locationName || ''}
+                  onChange={(e) => updateMapField('locationName', e.target.value)}
+                  placeholder="เช่น GIS GROUP Co., Ltd. (สำนักงานใหญ่ พระราม 3)"
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                />
+              </div>
+
+              {/* Address (Thai) */}
+              <div className="lg:col-span-3">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-700">
+                    ที่อยู่สำนักงานใหญ่ (Address - ภาษาไทย)
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    * อัปเดตไปยัง Footer และแผนที่อัตโนมัติ
+                  </span>
+                </div>
+                <textarea
+                  rows={2}
+                  value={currentMap.address || ''}
+                  onChange={(e) => updateMapField('address', e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                />
+              </div>
+
+              {/* Latitude */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  ละติจูด (Latitude)
+                </label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={currentMap.lat ?? 13.6844}
+                  onChange={(e) => updateMapField('lat', e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                />
+              </div>
+
+              {/* Longitude */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  ลองจิจูด (Longitude)
+                </label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={currentMap.lng ?? 100.5375}
+                  onChange={(e) => updateMapField('lng', e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                />
+              </div>
+
+              {/* Zoom Level Slider */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-700">
+                    ระดับการซูมเริ่มต้น (Zoom: {currentMap.zoom || 16}x)
+                  </label>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="19"
+                  step="1"
+                  value={currentMap.zoom || 16}
+                  onChange={(e) => updateMapField('zoom', parseInt(e.target.value))}
+                  className="w-full accent-orange-500 cursor-pointer mt-2"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+                  <span>10 (เมือง)</span>
+                  <span>16 (ถนน/อาคาร)</span>
+                  <span>19 (เจาะจงจุด)</span>
+                </div>
+              </div>
+
+              {/* Google Maps Link */}
+              <div className="lg:col-span-3">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  ลิงก์ Google Maps สำหรับผู้เข้าชมเว็บ (Google Maps Link)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={currentMap.googleMapsUrl || ''}
+                    onChange={(e) => updateMapField('googleMapsUrl', e.target.value)}
+                    className="flex-1 px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-medium text-blue-600 focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                  />
+                  <a
+                    href={currentMap.googleMapsUrl || `https://maps.google.com/?q=${encodeURIComponent(currentMap.address)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3.5 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shrink-0 flex items-center gap-1.5 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>ทดสอบเปิดลิงก์</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Headquarters Contacts */}
+          <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-6 space-y-5">
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+              <Phone className="w-5 h-5 text-gis-orange" />
+              <h3 className="text-base font-bold text-slate-900">
+                ข้อมูลช่องทางติดต่อสำนักงานใหญ่ (Headquarters Contacts)
+              </h3>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                เบอร์โทรศัพท์สำนักงานใหญ่ (Office Phone)
-              </label>
-              <input
-                type="text"
-                value={contactData.footer?.phone || ''}
-                onChange={(e) =>
-                  setContactData((prev) => ({
-                    ...prev,
-                    footer: { ...prev.footer, phone: e.target.value }
-                  }))
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  เบอร์โทรศัพท์ Call Center
+                </label>
+                <input
+                  type="text"
+                  value={contactData.footer?.callCenter || ''}
+                  onChange={(e) =>
+                    setContactData((prev) => ({
+                      ...prev,
+                      footer: { ...prev.footer, callCenter: e.target.value }
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm font-bold text-gis-orange focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                />
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                เบอร์โทรสาร (Fax)
-              </label>
-              <input
-                type="text"
-                value={contactData.footer?.fax || ''}
-                onChange={(e) =>
-                  setContactData((prev) => ({
-                    ...prev,
-                    footer: { ...prev.footer, fax: e.target.value }
-                  }))
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
-              />
-            </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  เบอร์โทรศัพท์สำนักงานใหญ่ (Office Phone)
+                </label>
+                <input
+                  type="text"
+                  value={contactData.footer?.phone || ''}
+                  onChange={(e) =>
+                    setContactData((prev) => ({
+                      ...prev,
+                      footer: { ...prev.footer, phone: e.target.value }
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                />
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                อีเมลหลักของบริษัท (Official Email)
-              </label>
-              <input
-                type="email"
-                value={contactData.footer?.email || ''}
-                onChange={(e) =>
-                  setContactData((prev) => ({
-                    ...prev,
-                    footer: { ...prev.footer, email: e.target.value }
-                  }))
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
-              />
-            </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  เบอร์โทรสาร (Fax)
+                </label>
+                <input
+                  type="text"
+                  value={contactData.footer?.fax || ''}
+                  onChange={(e) =>
+                    setContactData((prev) => ({
+                      ...prev,
+                      footer: { ...prev.footer, fax: e.target.value }
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                />
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                LINE Official ID
-              </label>
-              <input
-                type="text"
-                value={contactData.footer?.line || ''}
-                onChange={(e) =>
-                  setContactData((prev) => ({
-                    ...prev,
-                    footer: { ...prev.footer, line: e.target.value }
-                  }))
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
-              />
-            </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  อีเมลหลักของบริษัท (Official Email)
+                </label>
+                <input
+                  type="email"
+                  value={contactData.footer?.email || ''}
+                  onChange={(e) =>
+                    setContactData((prev) => ({
+                      ...prev,
+                      footer: { ...prev.footer, email: e.target.value }
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                />
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                ลิงก์ Google Maps
-              </label>
-              <input
-                type="text"
-                value={contactData.contactSection?.map?.googleMapsUrl || ''}
-                onChange={(e) =>
-                  setContactData((prev) => ({
-                    ...prev,
-                    contactSection: {
-                      ...prev.contactSection,
-                      map: { ...prev.contactSection.map, googleMapsUrl: e.target.value }
-                    }
-                  }))
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
-              />
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  LINE Official ID
+                </label>
+                <input
+                  type="text"
+                  value={contactData.footer?.line || ''}
+                  onChange={(e) =>
+                    setContactData((prev) => ({
+                      ...prev,
+                      footer: { ...prev.footer, line: e.target.value }
+                    }))
+                  }
+                  className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
+                />
+              </div>
             </div>
           </div>
         </div>

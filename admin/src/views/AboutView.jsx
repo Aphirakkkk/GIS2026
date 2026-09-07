@@ -50,7 +50,7 @@ const TAB_CONFIGS = [
 ];
 
 export const AboutView = () => {
-  const { currentContent, updateSection, activeView } = useAdmin();
+  const { currentContent, updateSection, activeView, showToast, showConfirm } = useAdmin();
 
   // Map sidebar activeView ID to tab ID
   const resolveInitialTab = () => {
@@ -226,7 +226,7 @@ export const AboutView = () => {
   const handleSaveMember = () => {
     if (!editingMember) return;
     if (!editingMember.nameTh?.trim()) {
-      alert('กรุณาระบุชื่อ-นามสกุล ภาษาไทย');
+      showToast('กรุณาระบุชื่อ-นามสกุล ภาษาไทย', 'warning');
       return;
     }
 
@@ -262,10 +262,22 @@ export const AboutView = () => {
 
     setEditingMember(null);
     setIsAddingNew(false);
+    showToast('บันทึกข้อมูลบุคลากรเรียบร้อยแล้ว', 'success');
   };
 
-  const handleDeleteMemberDirect = (id) => {
-    if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลบุคลากรท่านนี้?')) {
+  const handleDeleteMemberDirect = async (id) => {
+    const member = (activeSection.members || []).find(m => m.id === id);
+    const name = member?.nameTh || member?.nameEn || 'บุคลากรท่านนี้';
+
+    const confirmed = await showConfirm({
+      title: 'ยืนยันการลบข้อมูลบุคลากร',
+      message: `คุณต้องการลบข้อมูล "${name}" ใช่หรือไม่? ข้อมูลของบุคลากรท่านนี้จะถูกนำออกจากระบบ`,
+      confirmText: 'ยืนยันการลบ',
+      cancelText: 'ยกเลิก',
+      type: 'danger'
+    });
+
+    if (confirmed) {
       const updated = (activeSection.members || []).filter(m => m.id !== id);
       const newSectionsData = {
         ...sectionsData,
@@ -284,6 +296,7 @@ export const AboutView = () => {
       } catch (e) {
         console.warn('LocalStorage save error:', e);
       }
+      showToast(`ลบข้อมูล "${name}" เรียบร้อยแล้ว`, 'success');
     }
   };
 

@@ -5,7 +5,7 @@ import { RichTextEditor } from '../components/common/RichTextEditor';
 import { Save, Plus, Trash2, CheckCircle2, Eye, Sliders, Layers } from 'lucide-react';
 
 export const BannerView = () => {
-  const { currentContent, updateSection, lang, setIsPreviewOpen } = useAdmin();
+  const { currentContent, updateSection, lang, setIsPreviewOpen, showToast, showConfirm } = useAdmin();
   const [heroData, setHeroData] = useState(currentContent.hero || {});
   const [bannersList, setBannersList] = useState(currentContent.banners || []);
 
@@ -46,11 +46,24 @@ export const BannerView = () => {
       order: bannersList.length + 1
     };
     setBannersList([...bannersList, newBanner]);
+    showToast('เพิ่มแบนเนอร์ใหม่เรียบร้อยแล้ว', 'success');
   };
 
-  const handleDeleteBanner = (id) => {
-    if (window.confirm('คุณต้องการลบแบนเนอร์นี้ใช่หรือไม่?')) {
+  const handleDeleteBanner = async (id) => {
+    const banner = bannersList.find(b => b.id === id);
+    const title = banner?.title || 'แบนเนอร์นี้';
+
+    const confirmed = await showConfirm({
+      title: 'ยืนยันการลบแบนเนอร์',
+      message: `คุณต้องการลบแบนเนอร์ "${title}" ใช่หรือไม่?`,
+      confirmText: 'ยืนยันการลบ',
+      cancelText: 'ยกเลิก',
+      type: 'danger'
+    });
+
+    if (confirmed) {
       setBannersList(bannersList.filter(b => b.id !== id));
+      showToast(`ลบแบนเนอร์ "${title}" สำเร็จเรียบร้อย`, 'success');
     }
   };
 

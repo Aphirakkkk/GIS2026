@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useAdmin } from '../../context/AdminContext';
 import { UploadCloud, Link as LinkIcon, Image as ImageIcon, Trash2, Check } from 'lucide-react';
 
 export const ImageUploadField = ({
@@ -8,6 +9,7 @@ export const ImageUploadField = ({
   aspectRatio = "16:9",
   recommendation = "ขนาดแนะนำ: 1200 x 600 px (สัดส่วน 16:9)"
 }) => {
+  const { showToast } = useAdmin();
   const fileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('url'); // 'url' or 'upload'
   const [urlInput, setUrlInput] = useState(value);
@@ -17,7 +19,7 @@ export const ImageUploadField = ({
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert('กรุณาเลือกไฟล์รูปภาพขนาดไม่เกิน 5MB');
+        showToast('กรุณาเลือกไฟล์รูปภาพขนาดไม่เกิน 5MB', 'warning');
         return;
       }
       const reader = new FileReader();

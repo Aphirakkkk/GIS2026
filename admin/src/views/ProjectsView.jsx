@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 export const ProjectsView = () => {
-  const { currentContent, updateSection, lang, setIsPreviewOpen, activeView } = useAdmin();
+  const { currentContent, updateSection, lang, setIsPreviewOpen, activeView, showToast, showConfirm } = useAdmin();
 
   // Load projectsReferenceData with fallback
   const [data, setData] = useState(() => {
@@ -68,10 +68,19 @@ export const ProjectsView = () => {
   };
 
   // Reset to default
-  const handleReset = () => {
-    if (window.confirm('คุณต้องการคืนค่าผลงานโครงการทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่?')) {
+  const handleReset = async () => {
+    const confirmed = await showConfirm({
+      title: 'คืนค่าผลงานโครงการเริ่มต้น',
+      message: 'คุณต้องการคืนค่าผลงานโครงการทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่? ข้อมูลโครงการที่เพิ่มหรือแก้ไขไว้จะถูกแทนที่',
+      confirmText: 'คืนค่าเริ่มต้น',
+      cancelText: 'ยกเลิก',
+      type: 'warning'
+    });
+
+    if (confirmed) {
       setData(initialProjectsReferenceData);
       setSelectedCategory('all');
+      showToast('คืนค่าผลงานโครงการกลับเป็นค่าเริ่มต้นสำเร็จ', 'info');
     }
   };
 
@@ -115,15 +124,28 @@ export const ProjectsView = () => {
     const updated = [newProj, ...projectsList];
     setData(prev => ({ ...prev, projects: updated }));
     setEditingProject(newProj);
+    showToast('เพิ่มโครงการใหม่แล้ว กรุณากรอกรายละเอียดในแผงด้านขวา', 'success');
   };
 
   // Delete project
-  const handleDelete = (id) => {
-    if (window.confirm('คุณต้องการลบโครงการนี้ใช่หรือไม่?')) {
+  const handleDelete = async (id) => {
+    const targetProj = projectsList.find(p => p.id === id);
+    const title = targetProj?.title || 'โครงการนี้';
+
+    const confirmed = await showConfirm({
+      title: 'ยืนยันการลบโครงการ',
+      message: `คุณต้องการลบโครงการ "${title}" ใช่หรือไม่? ข้อมูลของโครงการนี้จะถูกลบออกจากระบบอย่างถาวร`,
+      confirmText: 'ยืนยันการลบ',
+      cancelText: 'ยกเลิก',
+      type: 'danger'
+    });
+
+    if (confirmed) {
       const updated = projectsList.filter(p => p.id !== id);
       setData(prev => ({ ...prev, projects: updated }));
       if (editingProject?.id === id) setEditingProject(null);
       if (previewProject?.id === id) setPreviewProject(null);
+      showToast(`ลบโครงการ "${title}" เรียบร้อยแล้ว`, 'success');
     }
   };
 

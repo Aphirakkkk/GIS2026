@@ -3,7 +3,7 @@ import { useAdmin } from '../context/AdminContext';
 import { Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export const LoginView = () => {
-  const { login } = useAdmin();
+  const { login, showToast } = useAdmin();
   const [username, setUsername] = useState('developer');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -108,7 +108,7 @@ export const LoginView = () => {
               <label className="text-xs font-semibold text-slate-700">รหัสผ่าน (Password)</label>
               <button
                 type="button"
-                onClick={() => alert('รหัสผ่านเริ่มต้นสำหรับระบบทดสอบคือ: password')}
+                onClick={() => showToast('รหัสผ่านเริ่มต้นสำหรับระบบทดสอบคือ: password', 'info')}
                 className="text-[11px] text-blue-600 hover:underline"
               >
                 ลืมรหัสผ่าน?

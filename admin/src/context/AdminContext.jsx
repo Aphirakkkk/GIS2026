@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { initialData } from '../data/initialData';
 
 const AdminContext = createContext();
@@ -74,22 +74,60 @@ export const AdminProvider = ({ children }) => {
 
   // Toast notification state
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-
-  // Save to localStorage when data changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
-      console.error('Failed to persist data to localStorage', e);
-    }
-  }, [data]);
+  const toastTimerRef = useRef(null);
 
   // Show toast notification
-  const showToast = (message, type = 'success') => {
+  const showToast = (message, type = 'success', duration = 3500) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ show: true, message, type });
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToast({ show: false, message: '', type: 'success' });
-    }, 3500);
+    }, duration);
+  };
+
+  const hideToast = () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ show: false, message: '', type: 'success' });
+  };
+
+  // Custom Confirmation Modal state
+  const [confirmState, setConfirmState] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'ยืนยัน',
+    cancelText: 'ยกเลิก',
+    type: 'danger',
+    onConfirm: null,
+    onCancel: null
+  });
+
+  // Promise-based confirm dialog
+  const showConfirm = ({
+    title = 'ยืนยันการทำรายการ',
+    message = 'คุณแน่ใจหรือไม่ว่าต้องการดำเนินการนี้?',
+    confirmText = 'ยืนยัน',
+    cancelText = 'ยกเลิก',
+    type = 'danger'
+  }) => {
+    return new Promise((resolve) => {
+      setConfirmState({
+        isOpen: true,
+        title,
+        message,
+        confirmText,
+        cancelText,
+        type,
+        onConfirm: () => {
+          setConfirmState((prev) => ({ ...prev, isOpen: false }));
+          resolve(true);
+        },
+        onCancel: () => {
+          setConfirmState((prev) => ({ ...prev, isOpen: false }));
+          resolve(false);
+        }
+      });
+    });
   };
 
   // Helper to update specific section for current language
@@ -120,8 +158,16 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Reset all data back to factory defaults
-  const resetToDefaults = () => {
-    if (window.confirm('คุณต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่? (ข้อมูลที่แก้ไขไว้จะถูกแทนที่)')) {
+  const resetToDefaults = async () => {
+    const confirmed = await showConfirm({
+      title: 'คืนค่าข้อมูลทั้งหมดของระบบ',
+      message: 'คุณต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่? ข้อมูลที่แก้ไขไว้ทั้งหมดจะถูกแทนที่ด้วยค่าเริ่มต้น',
+      confirmText: 'รีเซ็ตข้อมูลทั้งหมด',
+      cancelText: 'ยกเลิก',
+      type: 'warning'
+    });
+
+    if (confirmed) {
       setData(initialData);
       localStorage.removeItem(STORAGE_KEY);
       showToast('รีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นเรียบร้อยแล้ว', 'info');
@@ -214,6 +260,9 @@ export const AdminProvider = ({ children }) => {
         importData,
         toast,
         showToast,
+        hideToast,
+        confirmState,
+        showConfirm,
         isPreviewOpen,
         setIsPreviewOpen
       }}

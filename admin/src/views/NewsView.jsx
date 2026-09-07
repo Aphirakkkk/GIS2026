@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 
 export const NewsView = () => {
-  const { currentContent, updateSection, lang, setIsPreviewOpen, activeView } = useAdmin();
+  const { currentContent, updateSection, lang, setIsPreviewOpen, activeView, showToast, showConfirm } = useAdmin();
 
   // Load newsEventsData with fallback to initialNewsEventsData
   const [data, setData] = useState(() => {
@@ -69,11 +69,20 @@ export const NewsView = () => {
   };
 
   // Reset to default
-  const handleReset = () => {
-    if (window.confirm('คุณต้องการคืนค่าข่าวสารและกิจกรรมทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่?')) {
+  const handleReset = async () => {
+    const confirmed = await showConfirm({
+      title: 'คืนค่าข่าวสารและกิจกรรมเริ่มต้น',
+      message: 'คุณต้องการคืนค่าข่าวสารและกิจกรรมทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่? ข้อมูลข่าวสารที่แก้ไขหรือเพิ่มไว้จะถูกแทนที่',
+      confirmText: 'คืนค่าเริ่มต้น',
+      cancelText: 'ยกเลิก',
+      type: 'warning'
+    });
+
+    if (confirmed) {
       setData(initialNewsEventsData);
       setSelectedCategory('all');
       setCurrentSlide(0);
+      showToast('คืนค่าข่าวสารและกิจกรรมเป็นค่าเริ่มต้นสำเร็จ', 'info');
     }
   };
 
@@ -126,15 +135,28 @@ export const NewsView = () => {
     const updated = [newItem, ...newsList];
     setData(prev => ({ ...prev, items: updated }));
     setEditingArticle(newItem);
+    showToast('สร้างข่าวสารใหม่แล้ว กรุณากรอกรายละเอียดในแผงด้านขวา', 'success');
   };
 
   // Delete article
-  const handleDelete = (id) => {
-    if (window.confirm('คุณต้องการลบข่าวสารนี้ใช่หรือไม่?')) {
-      const updated = newsList.filter(item => item.id !== id);
+  const handleDelete = async (id) => {
+    const item = newsList.find(n => n.id === id);
+    const title = item?.title || 'ข่าวสารนี้';
+
+    const confirmed = await showConfirm({
+      title: 'ยืนยันการลบข่าวสาร',
+      message: `คุณต้องการลบ "${title}" ใช่หรือไม่? ข้อมูลนี้จะถูกลบออกจากระบบอย่างถาวร`,
+      confirmText: 'ยืนยันการลบ',
+      cancelText: 'ยกเลิก',
+      type: 'danger'
+    });
+
+    if (confirmed) {
+      const updated = newsList.filter(n => n.id !== id);
       setData(prev => ({ ...prev, items: updated }));
       if (editingArticle?.id === id) setEditingArticle(null);
       if (readingArticle?.id === id) setReadingArticle(null);
+      showToast(`ลบข่าวสาร "${title}" เรียบร้อยแล้ว`, 'success');
     }
   };
 

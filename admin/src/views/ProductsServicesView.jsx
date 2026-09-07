@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 
 export const ProductsServicesView = () => {
-  const { currentContent, updateSection, lang, setIsPreviewOpen, activeView } = useAdmin();
+  const { currentContent, updateSection, lang, setIsPreviewOpen, activeView, showToast, showConfirm } = useAdmin();
 
   // Load data with fallback to initialProductsServicesData
   const [formData, setFormData] = useState(() => {
@@ -59,9 +59,18 @@ export const ProductsServicesView = () => {
   };
 
   // Reset to default
-  const handleReset = () => {
-    if (window.confirm('คุณต้องการคืนค่า Products & Services ทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่?')) {
+  const handleReset = async () => {
+    const confirmed = await showConfirm({
+      title: 'คืนค่าสินค้าและบริการเริ่มต้น',
+      message: 'คุณต้องการคืนค่า Products & Services ทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่? ข้อมูลที่แก้ไขไว้จะถูกแทนที่',
+      confirmText: 'คืนค่าเริ่มต้น',
+      cancelText: 'ยกเลิก',
+      type: 'warning'
+    });
+
+    if (confirmed) {
       setFormData(initialProductsServicesData);
+      showToast('คืนค่าข้อมูล Products & Services สำเร็จ', 'info');
     }
   };
 

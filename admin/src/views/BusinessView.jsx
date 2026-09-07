@@ -92,7 +92,7 @@ const renderAdminIcon = (iconName, divKey, className = "w-5 h-5 text-orange-500"
 };
 
 export const BusinessView = () => {
-  const { currentContent, updateSection, lang, setIsPreviewOpen, activeView } = useAdmin();
+  const { currentContent, updateSection, lang, setIsPreviewOpen, activeView, showToast, showConfirm } = useAdmin();
 
   // Load businessData with fallback to initialBusinessData
   const [formData, setFormData] = useState(() => {
@@ -185,14 +185,22 @@ export const BusinessView = () => {
   };
 
   // Delete a division
-  const handleDeleteDivision = (divKey) => {
+  const handleDeleteDivision = async (divKey) => {
     const keys = Object.keys(formData.divisions || {});
     if (keys.length <= 1) {
-      alert('ไม่สามารถลบสายงานได้ เนื่องจากต้องมีอย่างน้อย 1 สายงาน');
+      showToast('ไม่สามารถลบสายงานได้ เนื่องจากต้องมีอย่างน้อย 1 สายงานในระบบ', 'warning');
       return;
     }
     const divName = formData.divisions[divKey]?.name || divKey;
-    if (window.confirm(`คุณต้องการลบสายงาน "${divName}" ใช่หรือไม่?`)) {
+    const confirmed = await showConfirm({
+      title: 'ยืนยันการลบสายงาน',
+      message: `คุณต้องการลบสายงาน "${divName}" ใช่หรือไม่? ข้อมูลทั้งหมดของสายงานนี้จะถูกลบออกจากระบบอย่างถาวร`,
+      confirmText: 'ยืนยันการลบ',
+      cancelText: 'ยกเลิก',
+      type: 'danger'
+    });
+
+    if (confirmed) {
       const updated = { ...formData.divisions };
       delete updated[divKey];
       setFormData(prev => ({
@@ -201,6 +209,7 @@ export const BusinessView = () => {
       }));
       const remaining = Object.keys(updated);
       setActiveTab(remaining[0] || 'general');
+      showToast(`ลบสายงาน "${divName}" สำเร็จเรียบร้อย`, 'success');
     }
   };
 
@@ -208,6 +217,7 @@ export const BusinessView = () => {
   const handleAddCapability = (divKey) => {
     const currentList = formData.divisions[divKey]?.capabilities || [];
     updateDivisionField(divKey, 'capabilities', [...currentList, 'ความเชี่ยวชาญ / ขอบเขตงานใหม่']);
+    showToast('เพิ่มรายการความเชี่ยวชาญใหม่แล้ว', 'success');
   };
 
   const handleUpdateCapability = (divKey, idx, value) => {
@@ -219,6 +229,7 @@ export const BusinessView = () => {
   const handleDeleteCapability = (divKey, idx) => {
     const currentList = formData.divisions[divKey]?.capabilities.filter((_, i) => i !== idx) || [];
     updateDivisionField(divKey, 'capabilities', currentList);
+    showToast('ลบรายการความเชี่ยวชาญเรียบร้อย', 'info');
   };
 
   // Save changes to AdminContext
@@ -227,9 +238,18 @@ export const BusinessView = () => {
   };
 
   // Reset to default
-  const handleReset = () => {
-    if (window.confirm('คุณต้องการคืนค่ากลุ่มธุรกิจกลับเป็นค่าเริ่มต้นใช่หรือไม่?')) {
+  const handleReset = async () => {
+    const confirmed = await showConfirm({
+      title: 'คืนค่ากลุ่มธุรกิจเริ่มต้น',
+      message: 'คุณต้องการคืนค่ากลุ่มธุรกิจ (Our Business) ทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่? ข้อมูลที่แก้ไขไว้จะถูกแทนที่',
+      confirmText: 'คืนค่าเริ่มต้น',
+      cancelText: 'ยกเลิก',
+      type: 'warning'
+    });
+
+    if (confirmed) {
       setFormData(initialBusinessData);
+      showToast('คืนค่าข้อมูลกลุ่มธุรกิจกลับเป็นค่าเริ่มต้นสำเร็จ', 'info');
     }
   };
 

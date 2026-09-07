@@ -85,7 +85,7 @@ const PRESET_LOCATIONS = [
 ];
 
 export const ContactView = () => {
-  const { data, updateSection, updateRootField, lang, showToast, activeView } = useAdmin();
+  const { data, updateSection, updateRootField, lang, showToast, showConfirm, activeView } = useAdmin();
 
   // Load contactFooterData & recentInquiries from context
   const initialCF = data.content?.[lang]?.contactFooterData || data.content?.th?.contactFooterData;
@@ -358,11 +358,19 @@ export const ContactView = () => {
   };
 
   // Reset to default
-  const handleReset = () => {
-    if (window.confirm('ต้องการรีเซ็ตข้อมูลหน้าติดต่อเราและส่วนท้ายเว็บกลับเป็นค่าเริ่มต้นหรือไม่?')) {
+  const handleReset = async () => {
+    const confirmed = await showConfirm({
+      title: 'คืนค่าหน้าติดต่อเราเริ่มต้น',
+      message: 'ต้องการรีเซ็ตข้อมูลหน้าติดต่อเราและส่วนท้ายเว็บทั้งหมดกลับเป็นค่าเริ่มต้นหรือไม่? ข้อมูลที่แก้ไขไว้จะถูกแทนที่',
+      confirmText: 'คืนค่าเริ่มต้น',
+      cancelText: 'ยกเลิก',
+      type: 'warning'
+    });
+
+    if (confirmed) {
       const defaultData = data.content?.th?.contactFooterData;
       setContactData(JSON.parse(JSON.stringify(defaultData)));
-      showToast('รีเซ็ตข้อมูลสำเร็จ');
+      showToast('รีเซ็ตข้อมูลหน้าติดต่อเราสำเร็จ', 'info');
     }
   };
 
@@ -370,7 +378,7 @@ export const ContactView = () => {
   const handlePreviewFormSubmit = (e) => {
     e.preventDefault();
     if (!previewForm.fullName.trim() || !previewForm.email.trim()) {
-      alert('กรุณากรอกชื่อและอีเมลให้ครบถ้วน');
+      showToast('กรุณากรอกชื่อและอีเมลให้ครบถ้วน', 'warning');
       return;
     }
 
@@ -403,7 +411,7 @@ export const ContactView = () => {
       setFormSubmitted(false);
     }, 4000);
 
-    showToast('ส่งข้อความทดสอบสำเร็จ! บันทึกลงกล่องข้อความแล้ว');
+    showToast('ส่งข้อความทดสอบสำเร็จ! บันทึกลงกล่องข้อความแล้ว', 'success');
   };
 
   // Status toggle in Inbox
@@ -422,17 +430,28 @@ export const ContactView = () => {
     });
     setInquiries(updated);
     updateRootField('recentInquiries', updated);
-    showToast('อัปเดตสถานะข้อความเรียบร้อย');
+    showToast('อัปเดตสถานะข้อความเรียบร้อย', 'info');
   };
 
   // Delete inquiry
-  const handleDeleteInquiry = (id) => {
-    if (window.confirm('คุณต้องการลบข้อความนี้ใช่หรือไม่?')) {
+  const handleDeleteInquiry = async (id) => {
+    const inq = inquiries.find((item) => item.id === id);
+    const sender = inq?.name || 'ข้อความนี้';
+
+    const confirmed = await showConfirm({
+      title: 'ยืนยันการลบข้อความติดต่อ',
+      message: `คุณต้องการลบข้อความจาก "${sender}" ใช่หรือไม่?`,
+      confirmText: 'ยืนยันการลบ',
+      cancelText: 'ยกเลิก',
+      type: 'danger'
+    });
+
+    if (confirmed) {
       const updated = inquiries.filter((item) => item.id !== id);
       setInquiries(updated);
       updateRootField('recentInquiries', updated);
       if (selectedInquiry?.id === id) setSelectedInquiry(null);
-      showToast('ลบข้อความเรียบร้อยแล้ว');
+      showToast(`ลบข้อความจาก "${sender}" เรียบร้อยแล้ว`, 'success');
     }
   };
 

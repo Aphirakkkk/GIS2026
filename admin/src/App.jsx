@@ -3,6 +3,7 @@ import { AdminProvider, useAdmin } from './context/AdminContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
 import { Toast } from './components/common/Toast';
+import { ConfirmModal } from './components/common/ConfirmModal';
 import { LivePreviewModal } from './components/preview/LivePreviewModal';
 
 // Views
@@ -113,6 +114,7 @@ function AdminMain() {
 
       {/* Popups and Overlays */}
       <Toast />
+      <ConfirmModal />
       <LivePreviewModal />
     </div>
   );

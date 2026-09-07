@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 export const CareerView = () => {
-  const { data, updateSection, lang, showToast, activeView } = useAdmin();
+  const { data, updateSection, lang, showToast, showConfirm, activeView } = useAdmin();
 
   // Retrieve current career data from context
   const currentCareer = data.content?.[lang]?.careerData || data.content?.th?.careerData;
@@ -70,11 +70,19 @@ export const CareerView = () => {
   };
 
   // Reset to default
-  const handleReset = () => {
-    if (window.confirm('คุณต้องการรีเซ็ตข้อมูลหน้า Career กลับเป็นค่าเริ่มต้นใช่หรือไม่?')) {
+  const handleReset = async () => {
+    const confirmed = await showConfirm({
+      title: 'คืนค่าหน้าสมัครงานเริ่มต้น',
+      message: 'คุณต้องการรีเซ็ตข้อมูลหน้า Career ทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่? ข้อมูลตำแหน่งงานและสวัสดิการที่แก้ไขไว้จะถูกแทนที่',
+      confirmText: 'คืนค่าเริ่มต้น',
+      cancelText: 'ยกเลิก',
+      type: 'warning'
+    });
+
+    if (confirmed) {
       const defaultData = data.content?.th?.careerData;
       setCareerData(JSON.parse(JSON.stringify(defaultData)));
-      showToast('รีเซ็ตข้อมูลหน้า Career สำเร็จ');
+      showToast('รีเซ็ตข้อมูลหน้า Career สำเร็จ', 'info');
     }
   };
 
@@ -124,8 +132,19 @@ export const CareerView = () => {
     showToast(editingPosition ? 'แก้ไขชื่อตำแหน่งงานเรียบร้อย' : 'เพิ่มตำแหน่งงานใหม่เรียบร้อย');
   };
 
-  const handleDeletePosition = (deptId, index) => {
-    if (window.confirm('คุณต้องการลบตำแหน่งงานนี้หรือไม่?')) {
+  const handleDeletePosition = async (deptId, index) => {
+    const dept = careerData.departments.find(d => d.id === deptId);
+    const posTitle = dept?.positions[index] || 'ตำแหน่งงานนี้';
+
+    const confirmed = await showConfirm({
+      title: 'ยืนยันการลบตำแหน่งงาน',
+      message: `คุณต้องการลบตำแหน่งงาน "${posTitle}" ใช่หรือไม่?`,
+      confirmText: 'ยืนยันการลบ',
+      cancelText: 'ยกเลิก',
+      type: 'danger'
+    });
+
+    if (confirmed) {
       setCareerData((prev) => ({
         ...prev,
         departments: prev.departments.map((dept) => {
@@ -138,7 +157,7 @@ export const CareerView = () => {
           return dept;
         })
       }));
-      showToast('ลบตำแหน่งงานเรียบร้อยแล้ว');
+      showToast(`ลบตำแหน่งงาน "${posTitle}" เรียบร้อยแล้ว`, 'success');
     }
   };
 

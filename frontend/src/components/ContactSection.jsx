@@ -122,19 +122,19 @@ export const ContactSection = () => {
             <div className="relative rounded-2xl overflow-hidden border border-white/10 h-60 bg-[#14171E] shadow-xl group">
               <iframe
                 title="GIS Group Rama 3 Map"
-                src="https://maps.google.com/maps?q=13.6844,100.5375&t=m&z=15&ie=UTF8&iwloc=&output=embed"
+                src="https://maps.google.com/maps?q=13.68094,100.52469&t=m&z=17&ie=UTF8&iwloc=&output=embed"
                 className="w-full h-full border-0 filter saturate-105"
                 loading="lazy"
               />
               <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 pointer-events-none">
                 <MapPin size={15} className="text-gis-orange animate-bounce" />
                 <span className="text-white text-xs font-bold">
-                  {lang === 'th' ? 'สำนักงานใหญ่ พระราม 3 (GIS GROUP)' : 'GIS GROUP Headquarters (Rama 3)'}
+                  {lang === 'th' ? 'จีไอเอส กรุ๊ป จำกัด (สำนักงานใหญ่ พระราม 3)' : 'GIS GROUP Co., Ltd. (Headquarters Rama 3)'}
                 </span>
               </div>
               <div className="absolute bottom-3 right-3">
                 <a
-                  href="https://maps.google.com/?q=13.6844,100.5375"
+                  href="https://maps.google.com/?q=13.68094,100.52469"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3.5 py-1.5 bg-gis-orange hover:bg-gis-orange-hover text-white text-xs font-bold rounded-lg shadow-lg flex items-center gap-1.5 transition-all hover:scale-105"

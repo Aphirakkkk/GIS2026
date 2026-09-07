@@ -38,12 +38,12 @@ import {
 
 const PRESET_LOCATIONS = [
   {
-    name: 'สำนักงานใหญ่ พระราม 3',
-    locationName: 'GIS GROUP Co., Ltd. (สำนักงานใหญ่ พระราม 3)',
-    address: '682/59-60 ถนนพระราม 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพฯ 10120',
-    lat: 13.6844,
-    lng: 100.5375,
-    zoom: 16,
+    name: 'สำนักงานใหญ่ พระราม 3 (จีไอเอส กรุ๊ป)',
+    locationName: 'จีไอเอส กรุ๊ป จำกัด (สำนักงานใหญ่)',
+    address: '682, 59-60 ถ. พระรามที่ 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพมหานคร 10120',
+    lat: 13.68094,
+    lng: 100.52469,
+    zoom: 17,
     tag: 'สำนักงานใหญ่'
   },
   {
@@ -104,24 +104,24 @@ export const ContactView = () => {
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [copiedCoords, setCopiedCoords] = useState(false);
 
-  // Current Map Data with robust fallbacks
+  // Current Map Data with exact GIS Group HQ coordinates (13.68094, 100.52469)
   const currentMap = contactData?.contactSection?.map || {
-    address: "682/59-60 ถนนพระราม 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพฯ 10120",
-    locationName: "GIS GROUP Co., Ltd. (สำนักงานใหญ่ พระราม 3)",
-    lat: 13.6844,
-    lng: 100.5375,
-    zoom: 16,
+    address: "682, 59-60 ถ. พระรามที่ 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพมหานคร 10120",
+    locationName: "จีไอเอส กรุ๊ป จำกัด (สำนักงานใหญ่)",
+    lat: 13.68094,
+    lng: 100.52469,
+    zoom: 17,
     mapType: "m",
-    googleMapsUrl: "https://maps.google.com/?q=13.6844,100.5375"
+    googleMapsUrl: "https://maps.google.com/?q=13.68094,100.52469"
   };
 
   const getMapEmbedUrl = (map, mode) => {
     const lat = map?.lat;
     const lng = map?.lng;
     const addr = map?.address;
-    const zoom = map?.zoom || 16;
+    const zoom = map?.zoom || 17;
     const type = mode === 'satellite' ? 'k' : 'm';
-    const query = lat && lng ? `${lat},${lng}` : addr || 'ถนนพระราม 3 บางโพงพาง';
+    const query = lat && lng ? `${lat},${lng}` : addr || '682, 59-60 ถ. พระรามที่ 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพมหานคร 10120';
     return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=${type}&z=${zoom}&ie=UTF8&iwloc=&output=embed`;
   };
 
@@ -153,23 +153,88 @@ export const ContactView = () => {
     if (e) e.preventDefault();
     const q = (mapSearchText || '').trim();
     if (!q) {
-      showToast('กรุณากรอกชื่อสถานที่หรือที่อยู่เพื่อค้นหา');
+      showToast('กรุณากรอกชื่อสถานที่ ที่อยู่ หรือพิกัด GPS เพื่อค้นหา');
       return;
     }
 
     setIsSearchingLocation(true);
+
+    // 1. Check if user pasted Lat, Lng coordinates (e.g. "13.68094, 100.52469" or "13.68094,100.52469")
+    const coordMatch = q.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+    if (coordMatch) {
+      const newLat = parseFloat(coordMatch[1]);
+      const newLng = parseFloat(coordMatch[2]);
+      const updatedMap = {
+        ...currentMap,
+        locationName: currentMap.locationName || 'พิกัดที่ระบุ',
+        lat: newLat,
+        lng: newLng,
+        zoom: 17,
+        googleMapsUrl: `https://maps.google.com/?q=${newLat},${newLng}`
+      };
+      setContactData((prev) => ({
+        ...prev,
+        contactSection: { ...prev?.contactSection, map: updatedMap }
+      }));
+      setIsSearchingLocation(false);
+      showToast(`ปักหมุดตามพิกัด GPS: [${newLat.toFixed(5)}, ${newLng.toFixed(5)}]`);
+      return;
+    }
+
+    // 2. Check if user searched for GIS Group, Rama 3, Plus Code MGJF+9V, or the exact Rama 3 address
+    const qLower = q.toLowerCase();
+    const isGISRama3 =
+      qLower.includes('จีไอเอส') ||
+      qLower.includes('gis') ||
+      qLower.includes('mgjf+9v') ||
+      qLower.includes('mgjf') ||
+      qLower.includes('682') ||
+      (qLower.includes('พระราม') && (qLower.includes('3') || qLower.includes('บางโพงพาง') || qLower.includes('ยานนาวา')));
+
+    if (isGISRama3) {
+      const exactLat = 13.68094;
+      const exactLng = 100.52469;
+      const exactAddress = '682, 59-60 ถ. พระรามที่ 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพมหานคร 10120';
+      const updatedMap = {
+        ...currentMap,
+        locationName: 'จีไอเอส กรุ๊ป จำกัด (สำนักงานใหญ่)',
+        address: exactAddress,
+        lat: exactLat,
+        lng: exactLng,
+        zoom: 17,
+        googleMapsUrl: `https://maps.google.com/?q=${exactLat},${exactLng}`
+      };
+      setContactData((prev) => ({
+        ...prev,
+        contactSection: { ...prev?.contactSection, map: updatedMap },
+        footer: { ...prev?.footer, address: exactAddress }
+      }));
+      setIsSearchingLocation(false);
+      showToast(`พบพิกัดสำนักงานใหญ่ จีไอเอส กรุ๊ป พระราม 3 [${exactLat}, ${exactLng}]`);
+      return;
+    }
+
+    // 3. For other locations, perform cleaned geocoding via Nominatim
     try {
+      const cleanQ = q.replace(/^[\d\s\/\,\.\-]+/, '').trim() || q;
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          q
+          cleanQ
         )}&countrycodes=th&limit=1`,
-        { headers: { 'Accept-Language': 'th, en' } }
+        { headers: { 'Accept-Language': 'th, en', 'User-Agent': 'GIS-Group-Portal' } }
       );
       const resData = await res.json();
       if (resData && resData.length > 0) {
         const found = resData[0];
         const newLat = parseFloat(found.lat);
         const newLng = parseFloat(found.lon);
+
+        // Sanity check: If query specified Bangkok / กทม. but result is in Pattaya (lat < 13.3)
+        const wantsBangkok = q.includes('กรุงเทพ') || q.includes('กทม') || q.includes('Bangkok');
+        if (wantsBangkok && (newLat < 13.4 || newLat > 13.95)) {
+          throw new Error('Result outside Bangkok');
+        }
+
         const updatedMap = {
           ...currentMap,
           locationName: q,
@@ -181,14 +246,8 @@ export const ContactView = () => {
         };
         setContactData((prev) => ({
           ...prev,
-          contactSection: {
-            ...prev?.contactSection,
-            map: updatedMap
-          },
-          footer: {
-            ...prev?.footer,
-            address: found.display_name || q
-          }
+          contactSection: { ...prev?.contactSection, map: updatedMap },
+          footer: { ...prev?.footer, address: found.display_name || q }
         }));
         showToast(`พบพิกัดแล้ว! ปักหมุดไปที่ [${newLat.toFixed(4)}, ${newLng.toFixed(4)}]`);
       } else {
@@ -200,14 +259,8 @@ export const ContactView = () => {
         };
         setContactData((prev) => ({
           ...prev,
-          contactSection: {
-            ...prev?.contactSection,
-            map: updatedMap
-          },
-          footer: {
-            ...prev?.footer,
-            address: q
-          }
+          contactSection: { ...prev?.contactSection, map: updatedMap },
+          footer: { ...prev?.footer, address: q }
         }));
         showToast(`อัปเดตที่อยู่และปักหมุดบน Google Maps: ${q}`);
       }
@@ -220,14 +273,8 @@ export const ContactView = () => {
       };
       setContactData((prev) => ({
         ...prev,
-        contactSection: {
-          ...prev?.contactSection,
-          map: updatedMap
-        },
-        footer: {
-          ...prev?.footer,
-          address: q
-        }
+        contactSection: { ...prev?.contactSection, map: updatedMap },
+        footer: { ...prev?.footer, address: q }
       }));
       showToast(`ค้นหาและปักหมุดด้วยชื่อ: ${q}`);
     } finally {
@@ -561,30 +608,6 @@ export const ContactView = () => {
                 <ExternalLink className="w-3.5 h-3.5" />
                 <span>Google Maps เต็มจอ</span>
               </a>
-            </div>
-          </div>
-
-          {/* Quick Location Presets Bar */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-slate-600 font-medium shrink-0">
-              <Crosshair className="w-4 h-4 text-gis-orange" />
-              <span>ทดลองย้ายหมุดจริง:</span>
-            </div>
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-              {PRESET_LOCATIONS.map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => applyPresetLocation(preset)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold whitespace-nowrap transition-all border ${
-                    currentMap.locationName === preset.locationName || currentMap.lat === preset.lat
-                      ? 'bg-gis-orange text-white border-orange-600 shadow-xs scale-105'
-                      : 'bg-white text-slate-700 border-slate-200 hover:border-orange-300 hover:bg-orange-50/50'
-                  }`}
-                >
-                  {preset.name}
-                </button>
-              ))}
             </div>
           </div>
 

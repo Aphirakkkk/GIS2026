@@ -10,17 +10,17 @@ export const initialContactFooterData = {
       sendButton: "SEND"
     },
     map: {
-      address: "682/59-60 ถนนพระราม 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพฯ 10120",
-      locationName: "GIS GROUP Co., Ltd. (สำนักงานใหญ่ พระราม 3)",
-      lat: 13.6844,
-      lng: 100.5375,
-      zoom: 16,
+      address: "682, 59-60 ถ. พระรามที่ 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพมหานคร 10120",
+      locationName: "จีไอเอส กรุ๊ป จำกัด (สำนักงานใหญ่)",
+      lat: 13.68094,
+      lng: 100.52469,
+      zoom: 17,
       mapType: "m", // 'm' roadmap, 'k' satellite, 'p' terrain
-      googleMapsUrl: "https://maps.google.com/?q=13.6844,100.5375"
+      googleMapsUrl: "https://maps.google.com/?q=13.68094,100.52469"
     }
   },
   footer: {
-    address: "682/59-60 ถนนพระราม 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพฯ 10120",
+    address: "682, 59-60 ถ. พระรามที่ 3 แขวงบางโพงพาง เขตยานนาวา กรุงเทพมหานคร 10120",
     callCenter: "081-149-9090",
     phone: "+66(0)2 682 1040-4",
     fax: "+66(0)2 682 1045",

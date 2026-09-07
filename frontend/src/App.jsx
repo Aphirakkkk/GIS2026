@@ -3,6 +3,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { ValuesSection } from './components/ValuesSection';
+import { BusinessSection } from './components/BusinessSection';
 import { AboutSection } from './components/AboutSection';
 import { Footer } from './components/Footer';
 
@@ -53,6 +54,9 @@ function App() {
 
             {/* Values Statement (G-I-S Parallelogram Slanted Cards) */}
             <ValuesSection />
+
+            {/* OUR BUSINESS Section (EPC, IBT, ENR & Fujitsu Video) */}
+            <BusinessSection />
 
             {/* About Us & ISO Certifications */}
             <AboutSection />

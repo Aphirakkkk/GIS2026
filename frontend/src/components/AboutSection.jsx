@@ -152,7 +152,9 @@ export const AboutSection = () => {
               {activeTab === 'org-structure' && (
                 <div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 pt-2">
-                    {((cur.members && cur.members.length > 0) ? cur.members : initialAboutSections['org-structure'].members).map((member, idx) => {
+                    {[...((cur.members && cur.members.length > 0) ? cur.members : initialAboutSections['org-structure'].members)]
+                      .sort((a, b) => (Number(a.order) || 999) - (Number(b.order) || 999))
+                      .map((member, idx) => {
                       const name = lang === 'th' ? (member.nameTh || member.name) : (member.nameEn || member.name);
                       const role = lang === 'th' ? (member.roleTh || member.role) : (member.roleEn || member.role);
 
@@ -726,11 +728,14 @@ export const AboutSection = () => {
                     <GraduationCap size={16} className="text-[#EA580C]" />
                     <span>{lang === 'th' ? 'วุฒิการศึกษา' : 'Education & Credentials'}</span>
                   </div>
-                  <p className="text-slate-600 pl-6 leading-relaxed">
-                    {lang === 'th'
-                      ? (selectedMember.educationTh || selectedMember.education)
-                      : (selectedMember.educationEn || selectedMember.education)}
-                  </p>
+                  <div
+                    className="text-slate-600 pl-6 leading-relaxed text-xs sm:text-sm [&>p]:mb-1 [&>ul]:list-disc [&>ul]:pl-4"
+                    dangerouslySetInnerHTML={{
+                      __html: (lang === 'th'
+                        ? (selectedMember.educationTh || selectedMember.education)
+                        : (selectedMember.educationEn || selectedMember.education)) || ''
+                    }}
+                  />
                 </div>
               )}
 
@@ -740,11 +745,14 @@ export const AboutSection = () => {
                     <Briefcase size={16} className="text-[#EA580C]" />
                     <span>{lang === 'th' ? 'ประวัติและประสบการณ์ทำงาน' : 'Professional Background'}</span>
                   </div>
-                  <p className="text-slate-600 pl-6 leading-relaxed">
-                    {lang === 'th'
-                      ? (selectedMember.experienceTh || selectedMember.experience)
-                      : (selectedMember.experienceEn || selectedMember.experience)}
-                  </p>
+                  <div
+                    className="text-slate-600 pl-6 leading-relaxed text-xs sm:text-sm [&>p]:mb-1 [&>ul]:list-disc [&>ul]:pl-4"
+                    dangerouslySetInnerHTML={{
+                      __html: (lang === 'th'
+                        ? (selectedMember.experienceTh || selectedMember.experience)
+                        : (selectedMember.experienceEn || selectedMember.experience)) || ''
+                    }}
+                  />
                 </div>
               )}
 

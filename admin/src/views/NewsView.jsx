@@ -174,25 +174,8 @@ export const NewsView = () => {
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
             type="button"
-            onClick={handleReset}
-            className="px-3 py-2 border border-slate-300 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            title="รีเซ็ตค่าเป็นค่าเริ่มต้น"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-            <span>คืนค่าเริ่มต้น</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsPreviewOpen(true)}
-            className="px-3.5 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <Eye className="w-4 h-4 text-slate-500" />
-            <span>ดูพรีวิวทั้งเว็บ</span>
-          </button>
-          <button
-            type="button"
             onClick={handleSave}
-            className="px-5 py-2 bg-gradient-to-r from-gis-orange to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all"
+            className="px-5 py-2 bg-gradient-to-r from-gis-orange to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>บันทึกข่าวสารทั้งหมด</span>

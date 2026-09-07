@@ -28,7 +28,11 @@ import {
   CheckCircle2,
   Eye,
   GraduationCap,
-  Briefcase
+  Briefcase,
+  Edit3,
+  ArrowLeft,
+  Upload,
+  X
 } from 'lucide-react';
 
 const TAB_CONFIGS = [
@@ -72,6 +76,11 @@ export const AboutView = () => {
   // Dual Language Mode: 'dual' (both side by side / stacked), 'th' (Thai only), 'en' (English only)
   const [editorLang, setEditorLang] = useState('dual');
 
+  // Organizational Structure dedicated member edit state
+  // null = table view (Screenshot 1), object = form view (Screenshot 2)
+  const [editingMember, setEditingMember] = useState(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+
   // Load sections from admin context or fallback to initialAboutSections
   const [sectionsData, setSectionsData] = useState(() => {
     const fromContext = currentContent?.aboutSections || {};
@@ -80,6 +89,8 @@ export const AboutView = () => {
 
   useEffect(() => {
     setActiveTab(resolveInitialTab());
+    setEditingMember(null);
+    setIsAddingNew(false);
   }, [activeView]);
 
   const activeSection = sectionsData[activeTab] || initialAboutSections[activeTab] || {};
@@ -153,33 +164,127 @@ export const AboutView = () => {
     handleUpdateField('reasonsEn', listEn);
   };
 
-  // Org members updater
-  const handleMemberChange = (idx, field, val) => {
-    const list = [...(activeSection.members || [])];
-    list[idx] = { ...list[idx], [field]: val };
-    handleUpdateField('members', list);
-  };
-
-  const handleAddMember = () => {
-    const newMember = {
+  // Executive Members Management (Screenshots 1 & 2)
+  const handleStartAddMember = () => {
+    const currentMembers = activeSection.members || [];
+    const maxOrder = currentMembers.reduce((max, m) => Math.max(max, Number(m.order) || 0), 0);
+    setEditingMember({
       id: Date.now(),
-      nameTh: 'ชื่อ-นามสกุล ผู้บริหารใหม่',
-      nameEn: 'New Executive Name',
-      roleTh: 'ตำแหน่งหน้าที่',
-      roleEn: 'Position / Department Role',
-      educationTh: 'วุฒิการศึกษา',
-      educationEn: 'Education & Degree',
-      experienceTh: 'ประวัติและประสบการณ์ทำงาน',
-      experienceEn: 'Professional Experience',
-      specialtyTh: 'ความเชี่ยวชาญพิเศษ',
-      specialtyEn: 'Specialty & Core Competencies'
-    };
-    handleUpdateField('members', [...(activeSection.members || []), newMember]);
+      order: maxOrder + 1,
+      nameTh: '',
+      nameEn: '',
+      roleTh: '',
+      roleEn: '',
+      image: '',
+      educationTh: '',
+      educationEn: '',
+      experienceTh: '',
+      experienceEn: '',
+      specialtyTh: '',
+      specialtyEn: ''
+    });
+    setIsAddingNew(true);
   };
 
-  const handleDeleteMember = (idx) => {
-    const list = (activeSection.members || []).filter((_, i) => i !== idx);
-    handleUpdateField('members', list);
+  const handleStartEditMember = (m) => {
+    setEditingMember({
+      id: m.id || Date.now(),
+      order: m.order ?? 1,
+      nameTh: m.nameTh || m.name || '',
+      nameEn: m.nameEn || '',
+      roleTh: m.roleTh || m.role || '',
+      roleEn: m.roleEn || '',
+      image: m.image || '',
+      educationTh: m.educationTh || m.education || '',
+      educationEn: m.educationEn || '',
+      experienceTh: m.experienceTh || m.experience || '',
+      experienceEn: m.experienceEn || '',
+      specialtyTh: m.specialtyTh || m.specialty || '',
+      specialtyEn: m.specialtyEn || ''
+    });
+    setIsAddingNew(false);
+  };
+
+  const handleCancelEditMember = () => {
+    setEditingMember(null);
+    setIsAddingNew(false);
+  };
+
+  const handleMemberImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      setEditingMember(prev => ({
+        ...prev,
+        image: uploadEvent.target?.result
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveMember = () => {
+    if (!editingMember) return;
+    if (!editingMember.nameTh?.trim()) {
+      alert('กรุณาระบุชื่อ-นามสกุล ภาษาไทย');
+      return;
+    }
+
+    const currentMembers = [...(activeSection.members || [])];
+    let updatedList = [];
+
+    if (isAddingNew) {
+      updatedList = [...currentMembers, editingMember];
+    } else {
+      updatedList = currentMembers.map(m => (m.id === editingMember.id ? editingMember : m));
+    }
+
+    // Sort by order ascending
+    updatedList.sort((a, b) => (Number(a.order) || 999) - (Number(b.order) || 999));
+
+    const newSectionsData = {
+      ...sectionsData,
+      [activeTab]: {
+        ...sectionsData[activeTab],
+        members: updatedList
+      }
+    };
+    setSectionsData(newSectionsData);
+    updateSection('aboutSections', newSectionsData);
+    try {
+      const stored = localStorage.getItem('GIS_ADMIN_DATA_V1');
+      let obj = stored ? JSON.parse(stored) : {};
+      obj.aboutSections = newSectionsData;
+      localStorage.setItem('GIS_ADMIN_DATA_V1', JSON.stringify(obj));
+    } catch (e) {
+      console.warn('LocalStorage save error:', e);
+    }
+
+    setEditingMember(null);
+    setIsAddingNew(false);
+  };
+
+  const handleDeleteMemberDirect = (id) => {
+    if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลบุคลากรท่านนี้?')) {
+      const updated = (activeSection.members || []).filter(m => m.id !== id);
+      const newSectionsData = {
+        ...sectionsData,
+        [activeTab]: {
+          ...sectionsData[activeTab],
+          members: updated
+        }
+      };
+      setSectionsData(newSectionsData);
+      updateSection('aboutSections', newSectionsData);
+      try {
+        const stored = localStorage.getItem('GIS_ADMIN_DATA_V1');
+        let obj = stored ? JSON.parse(stored) : {};
+        obj.aboutSections = newSectionsData;
+        localStorage.setItem('GIS_ADMIN_DATA_V1', JSON.stringify(obj));
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
+    }
   };
 
   // Awards updater
@@ -269,7 +374,11 @@ export const AboutView = () => {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setEditingMember(null);
+                    setIsAddingNew(false);
+                  }}
                   className={`w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between gap-3 group cursor-pointer ${
                     isActive
                       ? 'bg-gradient-to-r from-gis-orange to-amber-500 text-white border-transparent shadow-md shadow-orange-500/20 font-bold scale-[1.01]'
@@ -304,16 +413,221 @@ export const AboutView = () => {
         {/* Right Column: Editor Form with Bilingual Controls */}
         <div className="lg:col-span-8 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
           
-          {/* Section Header & Dual Language Switcher */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-            <div>
-              <span className="text-xs font-semibold text-gis-orange uppercase tracking-wider">
-                {activeSection.tagTh || activeSection.tag || "ABOUT SECTION"}
-              </span>
-              <h2 className="text-lg font-bold text-slate-800">
-                {activeSection.titleTh || activeSection.title || activeSection.menuTitle || activeTab}
-              </h2>
+          {activeTab === 'org-structure' && editingMember !== null ? (
+            /* ============================================================ */
+            /* SCREENSHOT 2: DEDICATED MEMBER EDIT / CREATE FORM */
+            /* ============================================================ */
+            <div className="space-y-5">
+              {/* Form Header */}
+              <div className="flex items-center justify-between pb-3.5 border-b border-slate-200">
+                <div className="flex items-center gap-2">
+                  <Edit3 className="w-5 h-5 text-gis-orange" />
+                  <h2 className="text-base font-bold text-slate-800">
+                    เปลี่ยนแปลงข้อมูล About Us โครงสร้างองค์กร
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelEditMember}
+                  className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  <ArrowLeft size={14} />
+                  <span>ย้อนกลับตารางรายชื่อ</span>
+                </button>
+              </div>
+
+              {/* ลำดับการแสดงผล */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 block">
+                  ลำดับการแสดงผล
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editingMember.order ?? ''}
+                  onChange={(e) => setEditingMember(prev => ({ ...prev, order: e.target.value }))}
+                  placeholder="1"
+                  className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-gis-orange/30 focus:border-gis-orange outline-none"
+                />
+                <p className="text-[11px] text-sky-600 font-medium">
+                  ℹ️ ตัวเลขน้อยจะขึ้นก่อน เช่น 1 จะแสดงเป็นคนแรกสุดของหน้าเว็บ
+                </p>
+              </div>
+
+              {/* 2-Column: Names */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    ชื่อ-นามสกุล ภาษาไทย <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editingMember.nameTh || ''}
+                    onChange={(e) => setEditingMember(prev => ({ ...prev, nameTh: e.target.value }))}
+                    placeholder="เช่น ภาณุวัฒน์ อัฏฐประภาส"
+                    className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-gis-orange/30 focus:border-gis-orange outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    ชื่อ-นามสกุล ภาษาอังกฤษ
+                  </label>
+                  <input
+                    type="text"
+                    value={editingMember.nameEn || ''}
+                    onChange={(e) => setEditingMember(prev => ({ ...prev, nameEn: e.target.value }))}
+                    placeholder="e.g. Panuwat Attaprapas"
+                    className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-gis-orange/30 focus:border-gis-orange outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* 2-Column: Roles */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    ตำแหน่งงาน ภาษาไทย <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editingMember.roleTh || ''}
+                    onChange={(e) => setEditingMember(prev => ({ ...prev, roleTh: e.target.value }))}
+                    placeholder="เช่น กรรมการผู้จัดการ"
+                    className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-gis-orange/30 focus:border-gis-orange outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    ตำแหน่งงาน ภาษาอังกฤษ
+                  </label>
+                  <input
+                    type="text"
+                    value={editingMember.roleEn || ''}
+                    onChange={(e) => setEditingMember(prev => ({ ...prev, roleEn: e.target.value }))}
+                    placeholder="e.g. Managing Director"
+                    className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-gis-orange/30 focus:border-gis-orange outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* 2-Column: Education with RichTextEditor */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <RichTextEditor
+                  label="ประวัติการศึกษา ภาษาไทย"
+                  value={editingMember.educationTh || ''}
+                  onChange={(html) => setEditingMember(prev => ({ ...prev, educationTh: html }))}
+                  lang="th"
+                  rows={4}
+                  placeholder="ระบุประวัติการศึกษา เช่น วุฒิการศึกษา สถาบัน..."
+                />
+                <RichTextEditor
+                  label="ประวัติการศึกษา ภาษาอังกฤษ"
+                  value={editingMember.educationEn || ''}
+                  onChange={(html) => setEditingMember(prev => ({ ...prev, educationEn: html }))}
+                  lang="en"
+                  rows={4}
+                  placeholder="Education background, degree, university..."
+                />
+              </div>
+
+              {/* 2-Column: Experience with RichTextEditor */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <RichTextEditor
+                  label="ประวัติการทำงาน ภาษาไทย"
+                  value={editingMember.experienceTh || ''}
+                  onChange={(html) => setEditingMember(prev => ({ ...prev, experienceTh: html }))}
+                  lang="th"
+                  rows={4}
+                  placeholder="ระบุประวัติและประสบการณ์ทำงาน..."
+                />
+                <RichTextEditor
+                  label="ประวัติการทำงาน ภาษาอังกฤษ"
+                  value={editingMember.experienceEn || ''}
+                  onChange={(html) => setEditingMember(prev => ({ ...prev, experienceEn: html }))}
+                  lang="en"
+                  rows={4}
+                  placeholder="Work history, previous positions and companies..."
+                />
+              </div>
+
+              {/* Row 5: Portrait Image */}
+              <div className="space-y-2 pt-2">
+                <label className="text-xs font-bold text-slate-700 block">
+                  รูปภาพบุคลากร (Portrait Image){' '}
+                  <span className="text-slate-400 font-normal text-[11px]">
+                    (กรอบจะแสดงผลสัดส่วนภาพให้เห็นที่ 400x500 px โดยอัตโนมัติ)
+                  </span>
+                </label>
+                <div className="flex flex-col sm:flex-row items-start gap-4">
+                  <div className="w-28 h-36 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 overflow-hidden flex items-center justify-center relative shadow-sm flex-shrink-0">
+                    {editingMember.image ? (
+                      <img
+                        src={editingMember.image}
+                        alt="Portrait"
+                        className="w-full h-full object-cover object-top"
+                      />
+                    ) : (
+                      <div className="text-center p-2 text-slate-400">
+                        <Users size={28} className="mx-auto mb-1 text-slate-300" />
+                        <span className="text-[10px] block">ไม่มีรูปภาพ</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2.5 flex-1 w-full">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleMemberImageUpload}
+                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border file:border-slate-300 file:text-xs file:font-semibold file:bg-white hover:file:bg-slate-50 cursor-pointer"
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-400 whitespace-nowrap">หรือ URL ภาพ:</span>
+                      <input
+                        type="text"
+                        value={editingMember.image || ''}
+                        onChange={(e) => setEditingMember(prev => ({ ...prev, image: e.target.value }))}
+                        placeholder="/images/team/member-1.jpg หรือ https://..."
+                        className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-gis-orange/30 outline-none"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      * สามารถอัปโหลดไฟล์รูปภาพใหม่จากคอมพิวเตอร์ หรือใส่ลิงก์ภาพได้
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Action Buttons */}
+              <div className="flex items-center justify-center gap-3 pt-6 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={handleCancelEditMember}
+                  className="px-6 py-2 border border-slate-300 hover:bg-slate-100 text-slate-600 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveMember}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                >
+                  <Save size={14} />
+                  <span>บันทึกข้อมูล</span>
+                </button>
+              </div>
             </div>
+          ) : (
+            <>
+              {/* Section Header & Dual Language Switcher */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div>
+                  <span className="text-xs font-semibold text-gis-orange uppercase tracking-wider">
+                    {activeSection.tagTh || activeSection.tag || "ABOUT SECTION"}
+                  </span>
+                  <h2 className="text-lg font-bold text-slate-800">
+                    {activeSection.titleTh || activeSection.title || activeSection.menuTitle || activeTab}
+                  </h2>
+                </div>
 
             {/* Language Mode Selector Tabs */}
             <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
@@ -466,113 +780,127 @@ export const AboutView = () => {
           {/* TAB-SPECIFIC EDITORS */}
           {/* ============================================================ */}
 
-          {/* 1. ORGANIZATIONAL STRUCTURE: Executive Members Editor */}
+          {/* 1. ORGANIZATIONAL STRUCTURE: Executive Members Table (Screenshot 1) */}
           {activeTab === 'org-structure' && (
             <div className="pt-4 border-t border-slate-100 space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">รายชื่อคณะผู้บริหาร (Executive Team Members)</h3>
-                  <p className="text-[11px] text-slate-500">จัดการรายชื่อ ตำแหน่ง วุฒิการศึกษา และความเชี่ยวชาญทั้ง 2 ภาษา</p>
+                  <h3 className="text-sm font-bold text-slate-800">
+                    รายชื่อคณะผู้บริหาร (Organizational Structure)
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    จัดการข้อมูลโครงสร้างบุคลากร ภาพถ่าย ตำแหน่ง และวุฒิการศึกษาทั้ง 2 ภาษา
+                  </p>
                 </div>
                 <button
                   type="button"
-                  onClick={handleAddMember}
-                  className="text-xs bg-orange-50 text-gis-orange hover:bg-orange-100 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  onClick={handleStartAddMember}
+                  className="text-xs bg-orange-50 text-gis-orange hover:bg-orange-100 px-3.5 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto border border-orange-200 shadow-sm"
                 >
-                  <Plus size={14} />
-                  <span>เพิ่มผู้บริหาร</span>
+                  <Plus size={15} />
+                  <span>+ เพิ่มข้อมูล (Add Executive)</span>
                 </button>
               </div>
 
-              <div className="space-y-4">
-                {(activeSection.members || []).map((m, idx) => (
-                  <div key={m.id || idx} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 relative group">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <span className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-gis-orange text-white text-[10px] flex items-center justify-center font-bold">
+              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                <table className="w-full text-left border-collapse min-w-[700px]">
+                  <thead>
+                    <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-xs font-semibold">
+                      <th className="text-center py-3.5 px-3 w-12">#</th>
+                      <th className="text-center py-3.5 px-4 w-28">รูปภาพ</th>
+                      <th className="py-3.5 px-6">ชื่อ-นามสกุล (TH / EN)</th>
+                      <th className="py-3.5 px-6">ตำแหน่ง (TH / EN)</th>
+                      <th className="text-center py-3.5 px-4 w-20">ลำดับ</th>
+                      <th className="text-center py-3.5 px-4 w-36">จัดการ (ACTION)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {([...(activeSection.members || [])]
+                      .sort((a, b) => (Number(a.order) || 999) - (Number(b.order) || 999))
+                    ).map((m, idx) => (
+                      <tr key={m.id || idx} className="hover:bg-slate-50/60 transition-colors">
+                        {/* # */}
+                        <td className="text-center py-4 px-3 font-bold text-slate-700">
                           {idx + 1}
-                        </span>
-                        <span>{m.nameTh || m.name || 'ผู้บริหาร'} / {m.roleTh || m.role}</span>
-                      </span>
+                        </td>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteMember(idx)}
-                        className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
-                        title="ลบผู้บริหารท่านนี้"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                        {/* รูปภาพ */}
+                        <td className="py-3 px-4">
+                          <div className="w-14 h-16 rounded-md overflow-hidden bg-slate-100 border border-slate-200 shadow-sm mx-auto flex items-center justify-center">
+                            {m.image ? (
+                              <img
+                                src={m.image}
+                                alt={m.nameTh || m.name}
+                                className="w-full h-full object-cover object-top"
+                              />
+                            ) : (
+                              <Users size={22} className="text-slate-300" />
+                            )}
+                          </div>
+                        </td>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-semibold text-slate-600">ชื่อ-นามสกุล (ภาษาไทย)</label>
-                        <input
-                          type="text"
-                          value={m.nameTh || m.name || ''}
-                          onChange={(e) => handleMemberChange(idx, 'nameTh', e.target.value)}
-                          className="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-semibold text-slate-600">Name in English (EN)</label>
-                        <input
-                          type="text"
-                          value={m.nameEn || ''}
-                          onChange={(e) => handleMemberChange(idx, 'nameEn', e.target.value)}
-                          className="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-semibold text-slate-600">ตำแหน่งหน้าที่ (ภาษาไทย)</label>
-                        <input
-                          type="text"
-                          value={m.roleTh || m.role || ''}
-                          onChange={(e) => handleMemberChange(idx, 'roleTh', e.target.value)}
-                          className="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-semibold text-slate-600">Position / Role (EN)</label>
-                        <input
-                          type="text"
-                          value={m.roleEn || ''}
-                          onChange={(e) => handleMemberChange(idx, 'roleEn', e.target.value)}
-                          className="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-semibold text-slate-600">วุฒิการศึกษา (TH)</label>
-                        <input
-                          type="text"
-                          value={m.educationTh || m.education || ''}
-                          onChange={(e) => handleMemberChange(idx, 'educationTh', e.target.value)}
-                          className="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-semibold text-slate-600">Education (EN)</label>
-                        <input
-                          type="text"
-                          value={m.educationEn || ''}
-                          onChange={(e) => handleMemberChange(idx, 'educationEn', e.target.value)}
-                          className="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5"
-                        />
-                      </div>
-                      <div className="sm:col-span-2 space-y-1">
-                        <label className="text-[11px] font-semibold text-slate-600">ประสบการณ์ทำงาน (TH / EN)</label>
-                        <textarea
-                          rows={2}
-                          value={m.experienceTh || m.experience || ''}
-                          onChange={(e) => handleMemberChange(idx, 'experienceTh', e.target.value)}
-                          className="w-full text-xs bg-white border border-slate-300 rounded p-2"
-                          placeholder="รายละเอียดประสบการณ์ทำงาน..."
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                        {/* ชื่อ-นามสกุล (TH / EN) */}
+                        <td className="py-4 px-6">
+                          <div className="font-bold text-slate-900 text-sm">
+                            {m.nameTh || m.name || '-'}
+                          </div>
+                          <div className="text-xs text-slate-400 font-normal mt-0.5">
+                            {m.nameEn || '-'}
+                          </div>
+                        </td>
+
+                        {/* ตำแหน่ง (TH / EN) */}
+                        <td className="py-4 px-6">
+                          <div className="font-bold text-sky-600 text-sm">
+                            {m.roleTh || m.role || '-'}
+                          </div>
+                          <div className="text-xs text-slate-400 font-normal mt-0.5">
+                            {m.roleEn || '-'}
+                          </div>
+                        </td>
+
+                        {/* ลำดับ (Cyan Badge) */}
+                        <td className="text-center py-4 px-4">
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-cyan-100 text-cyan-700 text-xs font-bold border border-cyan-200 shadow-xs">
+                            {m.order ?? (idx + 1)}
+                          </span>
+                        </td>
+
+                        {/* จัดการ (ACTION) */}
+                        <td className="py-4 px-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditMember(m)}
+                              className="px-2.5 py-1 text-xs font-medium text-amber-500 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded flex items-center gap-1 transition-colors cursor-pointer"
+                              title="แก้ไขข้อมูล"
+                            >
+                              <Edit3 size={13} />
+                              <span>แก้ไข</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMemberDirect(m.id)}
+                              className="px-2.5 py-1 text-xs font-medium text-rose-500 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded flex items-center gap-1 transition-colors cursor-pointer"
+                              title="ลบข้อมูล"
+                            >
+                              <Trash2 size={13} />
+                              <span>ลบ</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {(!activeSection.members || activeSection.members.length === 0) && (
+                      <tr>
+                        <td colSpan={6} className="text-center py-8 text-slate-400">
+                          ยังไม่มีข้อมูลคณะผู้บริหาร กรุณากดปุ่ม "+ เพิ่มข้อมูล" ด้านบน
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -874,6 +1202,9 @@ export const AboutView = () => {
               <span>บันทึกการแก้ไขทั้งหมด</span>
             </button>
           </div>
+
+          </>
+        )}
 
         </div>
 
